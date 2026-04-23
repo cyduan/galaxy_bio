@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolbox monitor="true">
+  <section id="interactivetools_local" name="Interactive Tools">
+    <!-- Keep this list focused on the most common bioinformatics notebooks and viewers. -->
+    <tool file="interactive/interactivetool_jupyter_notebook.xml" />
+    <tool file="interactive/interactivetool_rstudio.xml" />
+    <tool file="interactive/interactivetool_rstudio_bioc_3.20.xml" />
+    <tool file="interactive/interactivetool_cellxgene_1.1.1.xml" />
+    <tool file="interactive/interactivetool_higlass.xml" />
+    <tool file="interactive/interactivetool_blobtoolkit.xml" />
+    <tool file="interactive/interactivetool_pavian.xml" />
+    <tool file="interactive/interactivetool_openrefine.xml" />
+    <tool file="interactive/interactivetool_bam_iobio.xml" />
+    <tool file="interactive/interactivetool_vcf_iobio.xml" />
+    <tool file="interactive/interactivetool_wallace.xml" />
+  </section>
+</toolbox>

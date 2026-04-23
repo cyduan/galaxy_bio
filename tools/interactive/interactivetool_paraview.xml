@@ -10,7 +10,7 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="SERVER_NAME" strip="True">localhost:8080</environment_variable>
+        <environment_variable name="SERVER_NAME" strip="True">localhost:2718</environment_variable>
         <environment_variable name="PROTOCOL">wss</environment_variable>
         <environment_variable name="EXTRA_PVPYTHON_ARGS">-dr,--mesa-swr</environment_variable>
     </environment_variables>

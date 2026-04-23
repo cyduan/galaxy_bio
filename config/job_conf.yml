@@ -1,11 +1,11 @@
-## A sample job config for InteractiveTools using local runner. ##
+## Local + Docker job config for a Galaxy instance bound to localhost:2718. ##
 
 runners:
   local:
     load: galaxy.jobs.runners.local:LocalJobRunner
     workers: 4
 
-# Uncomment if dynamic handlers are defined in "gravity:handlers" section in galaxy.yml
+# Uncomment if dynamic handlers are defined in "gravity:handlers" in galaxy.yml.
 #
 #handling:
 #  assign:
@@ -30,14 +30,21 @@ execution:
       #docker_set_user: $UID
       docker_set_user:
 
-      # InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
-      # If you develop interactive tools on your 'localhost' and don't have a proper domain name
-      # you need to tell all Docker containers a hostname where Galaxy is running.
-      # This can be done via the add-host parameter during the `docker run` command.
-      # 'localhost' here is an arbitrary hostname that matches the IP address of your
-      # Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
-      # `galaxy_infrastructure_url: http://localhost:2718`.
-      #docker_run_extra_arguments: --add-host localhost:host-gateway
+      # For a single-node localhost deployment, Galaxy itself is reachable on
+      # http://localhost:2718. Docker containers cannot call back to that value
+      # on Linux, so switch galaxy_infrastructure_url in config/galaxy.yml to a
+      # real hostname (for example galaxy.local or your server FQDN) and
+      # uncomment the matching add-host line here.
+      #
+      # Example pair:
+      #   galaxy_infrastructure_url: http://galaxy.local:2718
+      #   docker_run_extra_arguments: --add-host galaxy.local:host-gateway
+      #
+      # Example for Docker Desktop:
+      #   galaxy_infrastructure_url: http://host.docker.internal:2718
+      #   docker_run_extra_arguments: --add-host host.docker.internal:host-gateway
+      #
+      #docker_run_extra_arguments: --add-host galaxy.local:host-gateway
 
       #docker_cmd: /usr/local/custom_docker/docker
       #docker_host:

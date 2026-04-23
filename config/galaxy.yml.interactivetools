@@ -21,9 +21,9 @@ galaxy:
   # `galaxy_infrastructure_url` needs to be reachable from IT containers.
   # For local development you can map arbitrary hostnames. See `job_conf.yml.interactivetools`
   # for an example.
-  # In the local development case you should use the `http` protocol (e.g http://localhost:8080) to access
+  # In the local development case you should use the `http` protocol (e.g http://localhost:2718) to access
   # your Galaxy, so saving notebooks doesn't fail due to invalid certificates.
-  galaxy_infrastructure_url: http://localhost:8080
+  galaxy_infrastructure_url: http://localhost:2718
 
   # Do not set the following 2 options if you are using an upstream proxy server like nginx
   interactivetools_upstream_proxy: false

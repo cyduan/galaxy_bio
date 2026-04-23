@@ -12,7 +12,7 @@
     </entry_points>
     <environment_variables>
         <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($rstudio.history_id)}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
-        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">2718</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="DEBUG">true</environment_variable>
         <environment_variable name="DISABLE_AUTH">true</environment_variable>

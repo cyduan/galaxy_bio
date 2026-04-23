@@ -73,6 +73,10 @@ object_store_conf.xml
 job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
+!config/DEPLOYMENT.local.md
+!config/galaxy.yml
+!config/job_conf.yml
+!config/tool_conf.interactivetools.xml
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache
