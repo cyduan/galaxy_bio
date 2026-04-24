@@ -59,6 +59,94 @@ you do not need its optional acceleration path:
 
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
+## BLAST
+
+The repository now includes a first local BLAST+ integration:
+
+- `tools/structure_prediction/blast_search/blast_search.xml`
+- `tools/structure_prediction/blast_search/blast_search.py`
+
+It currently exposes:
+
+- `blastn`
+- `blastp`
+
+The wrapper accepts query and subject FASTA datasets from Galaxy history,
+builds a temporary local database with `makeblastdb`, and then runs BLAST.
+
+### Recommended environment install
+
+NCBI's official BLAST+ manual documents the supported installer formats
+(installer, RPM, tarball, or source build). In this repository's Conda-based
+server layout, a dedicated Conda environment is the simplest operational
+choice:
+
+```bash
+conda create -n blastenv -c conda-forge -c bioconda blast=2.16.0 -y
+conda activate blastenv
+makeblastdb -version
+blastn -version
+blastp -version
+```
+
+Then keep the default paths in `config/job_conf.yml`:
+
+```yaml
+    blast_local:
+      runner: local
+      env:
+        - name: MAKEBLASTDB_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/makeblastdb
+        - name: BLASTN_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/blastn
+        - name: BLASTP_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/blastp
+```
+
+### How to test the environment
+
+1. Confirm the binaries are present:
+
+```bash
+/home/ubuntu/miniconda3/envs/blastenv/bin/makeblastdb -version
+/home/ubuntu/miniconda3/envs/blastenv/bin/blastn -version
+/home/ubuntu/miniconda3/envs/blastenv/bin/blastp -version
+```
+
+2. Run a tiny nucleotide self-test:
+
+```bash
+mkdir -p /tmp/blast_selftest
+cat > /tmp/blast_selftest/query_nt.fa <<'EOF'
+>q1
+ACGTACGT
+EOF
+cat > /tmp/blast_selftest/subject_nt.fa <<'EOF'
+>s1
+ACGTACGT
+EOF
+/home/ubuntu/miniconda3/envs/blastenv/bin/makeblastdb -in /tmp/blast_selftest/subject_nt.fa -dbtype nucl -out /tmp/blast_selftest/subject_nt_db
+/home/ubuntu/miniconda3/envs/blastenv/bin/blastn -query /tmp/blast_selftest/query_nt.fa -db /tmp/blast_selftest/subject_nt_db -outfmt 6
+```
+
+3. Run a tiny protein self-test:
+
+```bash
+cat > /tmp/blast_selftest/query_aa.fa <<'EOF'
+>q1
+MKTAYIAK
+EOF
+cat > /tmp/blast_selftest/subject_aa.fa <<'EOF'
+>s1
+MKTAYIAK
+EOF
+/home/ubuntu/miniconda3/envs/blastenv/bin/makeblastdb -in /tmp/blast_selftest/subject_aa.fa -dbtype prot -out /tmp/blast_selftest/subject_aa_db
+/home/ubuntu/miniconda3/envs/blastenv/bin/blastp -query /tmp/blast_selftest/query_aa.fa -db /tmp/blast_selftest/subject_aa_db -outfmt 6
+```
+
+If these commands print version strings and tabular alignments, the BLAST
+environment is ready for Galaxy.
+
 ## Reverse Proxy
 
 This configuration uses direct Interactive Tools proxy mode:

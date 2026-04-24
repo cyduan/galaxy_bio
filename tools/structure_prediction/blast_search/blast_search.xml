@@ -1,0 +1,102 @@
+<tool id="blast_search" name="BLAST Search" version="0.1.0" profile="24.0">
+  <description>run local blastn or blastp against a FASTA subject file</description>
+  <command detect_errors="exit_code"><![CDATA[
+#set $blast_task_arg = ""
+#if $program.program_id == "blastn" and str($program.blast_task) not in ["", "None"]:
+    #set $blast_task_arg = "--blast-task '%s'" % $program.blast_task
+#end if
+#set $blast_binary_arg = ""
+#if str($blast_binary) not in ["", "None"]:
+    #set $blast_binary_arg = "--blast-binary '%s'" % $blast_binary
+#end if
+#set $makeblastdb_binary_arg = ""
+#if str($makeblastdb_binary) not in ["", "None"]:
+    #set $makeblastdb_binary_arg = "--makeblastdb-binary '%s'" % $makeblastdb_binary
+#end if
+python '$__tool_directory__/blast_search.py' --program '$program.program_id' --query '$query' --subject '$subject' --output '$report' --output-format '$output_format' --evalue '$evalue' --max-target-seqs '$max_target_seqs' --num-threads '$num_threads' $blast_task_arg $blast_binary_arg $makeblastdb_binary_arg
+  ]]></command>
+  <inputs>
+    <conditional name="program">
+      <param name="program_id" type="select" label="BLAST program">
+        <option value="blastp" selected="true">blastp (protein vs protein)</option>
+        <option value="blastn">blastn (nucleotide vs nucleotide)</option>
+      </param>
+      <when value="blastp" />
+      <when value="blastn">
+        <param name="blast_task" type="select" label="blastn task">
+          <option value="megablast" selected="true">megablast</option>
+          <option value="blastn">blastn</option>
+          <option value="blastn-short">blastn-short</option>
+        </param>
+      </when>
+    </conditional>
+    <param name="query" type="data" format="fasta" label="Query FASTA" />
+    <param name="subject" type="data" format="fasta" label="Subject FASTA database source" />
+    <param name="output_format" type="select" label="Output format">
+      <option value="tabular" selected="true">Tabular (outfmt 6)</option>
+      <option value="pairwise">Pairwise text report</option>
+    </param>
+    <param name="evalue" type="float" value="1e-5" min="0" label="E-value cutoff" />
+    <param name="max_target_seqs" type="integer" value="10" min="1" label="Maximum target sequences" />
+    <param name="num_threads" type="integer" value="1" min="1" label="Threads" />
+    <param name="blast_binary" type="hidden" value="" />
+    <param name="makeblastdb_binary" type="hidden" value="" />
+  </inputs>
+  <outputs>
+    <data name="report" format="tabular" label="${tool.name} on ${on_string}: ${program.program_id}">
+      <change_format>
+        <when input="output_format" value="pairwise" format="txt" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="program_id" value="blastn" />
+      <param name="blast_task" value="megablast" />
+      <param name="query" value="blastn_query.fasta" ftype="fasta" />
+      <param name="subject" value="blastn_subject.fasta" ftype="fasta" />
+      <param name="output_format" value="tabular" />
+      <param name="blast_binary" value="mock-blastn" />
+      <param name="makeblastdb_binary" value="mock-makeblastdb" />
+      <output name="report" file="blastn_expected.tabular" ftype="tabular" />
+    </test>
+    <test>
+      <param name="program_id" value="blastp" />
+      <param name="query" value="blastp_query.fasta" ftype="fasta" />
+      <param name="subject" value="blastp_subject.fasta" ftype="fasta" />
+      <param name="output_format" value="pairwise" />
+      <param name="blast_binary" value="mock-blastp" />
+      <param name="makeblastdb_binary" value="mock-makeblastdb" />
+      <output name="report" file="blastp_expected.txt" ftype="txt" />
+    </test>
+  </tests>
+  <help><![CDATA[
+This first BLAST integration runs local BLAST+ searches inside Galaxy.
+
+Included programs
+=================
+
+- ``blastn`` for nucleotide queries against nucleotide subjects
+- ``blastp`` for protein queries against protein subjects
+
+How this wrapper works
+======================
+
+Instead of requiring a pre-built BLAST database datatype, this tool accepts a
+subject FASTA file from Galaxy history, builds a temporary local database with
+``makeblastdb``, and then runs the selected BLAST program.
+
+Outputs
+=======
+
+- ``Tabular``: BLAST outfmt 6 with standard alignment columns
+- ``Pairwise``: the classic text report
+
+Admin notes
+===========
+
+This wrapper expects NCBI BLAST+ executables to be available in the job
+environment. In this repository the recommended deployment is a dedicated
+Conda environment, wired through ``config/job_conf.yml``.
+  ]]></help>
+</tool>

@@ -1,0 +1,4 @@
+BLASTP mock report
+Query= query_prot
+Subject= subject_prot
+Score = 42.0 bits, Expect = 1.0e-50

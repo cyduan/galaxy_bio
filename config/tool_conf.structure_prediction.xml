@@ -5,6 +5,9 @@
     <tool file="structure_prediction/manual_sequences_to_file/manual_sequences_to_file.xml" />
     <tool file="structure_prediction/fasta_to_table/fasta_to_table.xml" />
   </section>
+  <section id="similarity_search" name="Similarity Search">
+    <tool file="structure_prediction/blast_search/blast_search.xml" />
+  </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />
   </section>

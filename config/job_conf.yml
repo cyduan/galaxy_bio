@@ -28,6 +28,16 @@ execution:
       #   - name: ESMFOLD_PYTHON
       #     value: /home/ubuntu/miniconda3/envs/esmfold39/bin/python
 
+    blast_local:
+      runner: local
+      env:
+        - name: MAKEBLASTDB_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/makeblastdb
+        - name: BLASTN_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/blastn
+        - name: BLASTP_BINARY
+          value: /home/ubuntu/miniconda3/envs/blastenv/bin/blastp
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -90,3 +100,5 @@ execution:
 tools:
 - id: esmfold
   environment: esmfold_local
+- id: blast_search
+  environment: blast_local
