@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="esmfold" name="ESMFold" version="0.1.0" profile="24.0">
+    <description>predict a protein structure from a single FASTA sequence</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $execution_mode_arg = ""
+#if $execution_mode.mode == "cpu_only":
+    #set $execution_mode_arg = "--cpu-only"
+#elif $execution_mode.mode == "cpu_offload":
+    #set $execution_mode_arg = "--cpu-offload"
+#end if
+#set $max_tokens_arg = ""
+#if str($advanced.max_tokens_per_batch) not in ["", "None"]:
+    #set $max_tokens_arg = "--max-tokens-per-batch '%s'" % $advanced.max_tokens_per_batch
+#end if
+#set $chunk_size_arg = ""
+#if str($advanced.chunk_size) not in ["", "None"]:
+    #set $chunk_size_arg = "--chunk-size '%s'" % $advanced.chunk_size
+#end if
+#set $output_name_arg = ""
+#if str($advanced.output_name) not in ["", "None"]:
+    #set $output_name_arg = "--output-name '%s'" % $advanced.output_name
+#end if
+python '$__tool_directory__/run_esmfold.py' \
+    --input-fasta '$sequence' \
+    --output-pdb 'result.pdb' \
+    --summary-json 'summary.json' \
+    --esmfold-command '$esmfold_command' \
+    --num-recycles '$num_recycles' \
+    $execution_mode_arg \
+    $max_tokens_arg \
+    $chunk_size_arg \
+    $output_name_arg
+    ]]></command>
+    <inputs>
+        <param name="sequence" type="data" format="fasta" label="Protein sequence (single FASTA record)"
+            help="Use one protein or one multimer definition per dataset. For batches, map this tool over a collection instead of supplying a multi-record FASTA." />
+        <param name="num_recycles" type="integer" min="1" value="4" label="Number of recycles" />
+        <conditional name="execution_mode">
+            <param name="mode" type="select" label="Execution mode">
+                <option value="gpu" selected="true">GPU</option>
+                <option value="cpu_offload">GPU with CPU offload</option>
+                <option value="cpu_only">CPU only</option>
+            </param>
+            <when value="gpu" />
+            <when value="cpu_offload" />
+            <when value="cpu_only" />
+        </conditional>
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param name="max_tokens_per_batch" type="integer" optional="true" label="Max tokens per batch"
+                help="Leave empty to let the esm-fold CLI choose its default batching behavior." />
+            <param name="chunk_size" type="integer" optional="true" label="Chunk size"
+                help="Lower values reduce memory pressure but make inference slower." />
+            <param name="output_name" type="text" optional="true" label="Output name prefix"
+                help="Defaults to the sanitized FASTA identifier." />
+        </section>
+        <param name="esmfold_command" type="hidden" value="esm-fold" />
+    </inputs>
+    <outputs>
+        <data name="pdb_model" format="pdb" from_work_dir="result.pdb" label="${tool.name} on ${on_string}: structure model" />
+        <data name="summary_json" format="json" from_work_dir="summary.json" label="${tool.name} on ${on_string}: run summary" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="sequence" value="esmfold_single.fasta" />
+            <param name="num_recycles" value="6" />
+            <conditional name="execution_mode">
+                <param name="mode" value="cpu_offload" />
+            </conditional>
+            <param name="esmfold_command" value="mock-esmfold" />
+            <output name="pdb_model" file="esmfold_single_expected.pdb" />
+            <output name="summary_json">
+                <assert_contents>
+                    <has_text text="&quot;esmfold_command&quot;: &quot;mock-esmfold&quot;" />
+                    <has_text text="&quot;execution_mode&quot;: &quot;cpu_offload&quot;" />
+                    <has_text text="&quot;input_identifier&quot;: &quot;example_target&quot;" />
+                    <has_text text="&quot;sequence_length&quot;: 34" />
+                    <has_text text="&quot;mean_b_factor&quot;: 89.1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="sequence" value="esmfold_multi.fasta" />
+            <param name="esmfold_command" value="mock-esmfold" />
+        </test>
+    </tests>
+    <help><![CDATA[
+ESMFold predicts a protein structure from a single FASTA record and returns:
+
+- a ``PDB`` structure model
+- a small ``JSON`` summary containing sequence length, atom count, chain ids, and mean B-factor
+
+The wrapper intentionally accepts **one FASTA record per dataset**. If you need to process many sequences,
+upload them as a collection and map this tool over the collection.
+
+Admin notes
+===========
+
+This first wrapper targets the official ``esm-fold`` CLI from the `Meta ESM repository <https://github.com/facebookresearch/esm>`_.
+The Galaxy job environment must make that CLI available on ``PATH`` or override it with the ``ESMFOLD_BINARY``
+environment variable. GPU execution is recommended for real workloads.
+
+The wrapper also recognizes ``mock-esmfold`` as a lightweight built-in test mode for local wrapper verification
+and Galaxy tool tests. That mode is only intended for smoke tests, not for real structure prediction.
+
+This repository already maps ``pdb`` datasets to the built-in ``Mol*`` visualization, so successful outputs can be
+opened directly in Galaxy's structure viewer.
+    ]]></help>
+</tool>

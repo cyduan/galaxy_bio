@@ -77,6 +77,7 @@ config/*
 !config/galaxy.yml
 !config/job_conf.yml
 !config/tool_conf.interactivetools.xml
+!config/tool_conf.structure_prediction.xml
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache

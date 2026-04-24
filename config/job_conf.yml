@@ -17,6 +17,12 @@ execution:
     local:
       runner: local
 
+    esmfold_local:
+      runner: local
+      # The first ESMFold wrapper runs directly in the Galaxy job environment.
+      # Install the `esm-fold` CLI on PATH, or export ESMFOLD_BINARY to point to
+      # your own launcher script or virtual environment entrypoint.
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -63,3 +69,17 @@ execution:
       type: docker_dispatch
       docker_destination_id: docker_local
       default_destination_id: local
+
+    # Example production destination for a containerized GPU-backed ESMFold
+    # deployment. Uncomment, set a real image, and then switch the esmfold
+    # tool mapping below from esmfold_local to esmfold_gpu.
+    #
+    #esmfold_gpu:
+    #  runner: local
+    #  docker_enabled: true
+    #  docker_default_container_id: your-registry/esmfold:latest
+    #  docker_run_extra_arguments: --gpus all
+
+tools:
+- id: esmfold
+  environment: esmfold_local

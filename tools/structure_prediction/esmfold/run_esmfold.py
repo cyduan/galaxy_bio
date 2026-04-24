@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import uuid
+from pathlib import Path
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the esm-fold CLI on a single FASTA record.")
+    parser.add_argument("--input-fasta", required=True)
+    parser.add_argument("--output-pdb", required=True)
+    parser.add_argument("--summary-json", required=True)
+    parser.add_argument("--esmfold-command", default=os.environ.get("ESMFOLD_BINARY", "esm-fold"))
+    parser.add_argument("--num-recycles", type=int, default=4)
+    parser.add_argument("--max-tokens-per-batch", type=int)
+    parser.add_argument("--chunk-size", type=int)
+    parser.add_argument("--output-name")
+    parser.add_argument("--cpu-only", action="store_true")
+    parser.add_argument("--cpu-offload", action="store_true")
+    args = parser.parse_args()
+    if args.cpu_only and args.cpu_offload:
+        parser.error("--cpu-only and --cpu-offload are mutually exclusive")
+    return args
+
+
+def read_single_fasta(path: Path) -> tuple[str, str]:
+    identifier = None
+    sequence_lines: list[str] = []
+    record_count = 0
+    with path.open() as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                record_count += 1
+                if record_count > 1:
+                    raise ValueError(
+                        "ESMFold wrapper currently accepts exactly one FASTA record. "
+                        "Use a collection and map over it for batches."
+                    )
+                identifier = line[1:].strip() or "query"
+            else:
+                if identifier is None:
+                    raise ValueError("Input is not a valid FASTA file: sequence data found before a header line.")
+                sequence_lines.append(line)
+    if identifier is None:
+        raise ValueError("No FASTA records were found in the input dataset.")
+    sequence = "".join(sequence_lines).strip()
+    if not sequence:
+        raise ValueError("The FASTA record is empty.")
+    return identifier, sequence
+
+
+def sanitize_identifier(identifier: str) -> str:
+    sanitized = re.sub(r"[^A-Za-z0-9_.-]+", "_", identifier).strip("._")
+    return sanitized or "query"
+
+
+def split_command(command: str) -> list[str]:
+    return shlex.split(command, posix=(os.name != "nt"))
+
+
+def resolve_command(command: str) -> list[str]:
+    if command == "mock-esmfold":
+        mock_cli = Path(__file__).resolve().parent / "test-data" / "mock_esmfold_cli.py"
+        return [sys.executable, str(mock_cli)]
+    return split_command(command)
+
+
+def find_single_pdb(directory: Path) -> Path:
+    pdb_files = sorted(directory.rglob("*.pdb"))
+    if not pdb_files:
+        raise RuntimeError("ESMFold did not produce any PDB files.")
+    if len(pdb_files) > 1:
+        names = ", ".join(path.name for path in pdb_files)
+        raise RuntimeError(f"ESMFold produced multiple PDB files unexpectedly: {names}")
+    return pdb_files[0]
+
+
+def parse_pdb_metrics(path: Path) -> dict:
+    atom_count = 0
+    residue_ids = set()
+    chain_ids = set()
+    b_factors: list[float] = []
+    with path.open() as handle:
+        for line in handle:
+            if line.startswith(("ATOM  ", "HETATM")):
+                atom_count += 1
+                chain_id = line[21].strip() or "_"
+                residue_number = line[22:26].strip()
+                insertion_code = line[26].strip()
+                chain_ids.add(chain_id)
+                residue_ids.add((chain_id, residue_number, insertion_code))
+                b_text = line[60:66].strip()
+                if b_text:
+                    try:
+                        b_factors.append(float(b_text))
+                    except ValueError:
+                        pass
+    mean_b_factor = round(sum(b_factors) / len(b_factors), 3) if b_factors else None
+    return {
+        "atom_count": atom_count,
+        "residue_count": len(residue_ids),
+        "chain_ids": sorted(chain_ids),
+        "mean_b_factor": mean_b_factor,
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    input_path = Path(args.input_fasta)
+    output_pdb = Path(args.output_pdb)
+    summary_json = Path(args.summary_json)
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    summary_json.parent.mkdir(parents=True, exist_ok=True)
+
+    identifier, sequence = read_single_fasta(input_path)
+    output_name = sanitize_identifier(args.output_name or identifier)
+
+    temp_dir = output_pdb.parent / f".esmfold_tmp_{uuid.uuid4().hex}"
+    temp_dir.mkdir(parents=True, exist_ok=False)
+    try:
+        temp_fasta = temp_dir / f"{output_name}.fasta"
+        output_dir = temp_dir / "esmfold_output"
+        output_dir.mkdir()
+        temp_fasta.write_text(f">{output_name}\n{sequence}\n", encoding="utf-8")
+
+        command = resolve_command(args.esmfold_command)
+        command.extend(["-i", str(temp_fasta), "-o", str(output_dir), "--num-recycles", str(args.num_recycles)])
+        if args.max_tokens_per_batch is not None:
+            command.extend(["--max-tokens-per-batch", str(args.max_tokens_per_batch)])
+        if args.chunk_size is not None:
+            command.extend(["--chunk-size", str(args.chunk_size)])
+        if args.cpu_only:
+            command.append("--cpu-only")
+        elif args.cpu_offload:
+            command.append("--cpu-offload")
+
+        completed = subprocess.run(command, capture_output=True, text=True)
+        if completed.returncode != 0:
+            sys.stderr.write(completed.stderr)
+            sys.stdout.write(completed.stdout)
+            raise RuntimeError(f"esm-fold exited with status {completed.returncode}")
+
+        pdb_path = find_single_pdb(output_dir)
+        shutil.copyfile(pdb_path, output_pdb)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    metrics = parse_pdb_metrics(output_pdb)
+    summary = {
+        "tool": "ESMFold",
+        "input_identifier": identifier,
+        "output_name": output_name,
+        "sequence_length": len(sequence.replace(":", "")),
+        "multimer_chain_count": sequence.count(":") + 1,
+        "num_recycles": args.num_recycles,
+        "execution_mode": "cpu_only" if args.cpu_only else "cpu_offload" if args.cpu_offload else "gpu",
+        "esmfold_command": args.esmfold_command,
+        **metrics,
+    }
+    summary_json.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

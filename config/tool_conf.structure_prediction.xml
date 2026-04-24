@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolbox monitor="true">
+  <section id="structure_prediction" name="Structure Prediction">
+    <tool file="structure_prediction/esmfold/esmfold.xml" />
+  </section>
+</toolbox>

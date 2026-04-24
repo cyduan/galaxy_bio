@@ -12,6 +12,7 @@ galaxy:
   tool_config_file:
     - ../lib/galaxy/config/sample/tool_conf.xml.sample
     - tool_conf.interactivetools.xml
+    - tool_conf.structure_prediction.xml
 
   interactivetools_enable: true
   interactivetools_map: database/interactivetools_map.sqlite
