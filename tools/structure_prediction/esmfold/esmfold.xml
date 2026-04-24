@@ -9,12 +9,12 @@
     #set $execution_mode_arg = "--cpu-offload"
 #end if
 #set $max_tokens_arg = ""
-#if str($advanced.max_tokens_per_batch) not in ["", "None"]:
-    #set $max_tokens_arg = "--max-tokens-per-batch '%s'" % $advanced.max_tokens_per_batch
+#if $advanced.max_tokens_per_batch.mode == "custom":
+    #set $max_tokens_arg = "--max-tokens-per-batch '%s'" % $advanced.max_tokens_per_batch.value
 #end if
 #set $chunk_size_arg = ""
-#if str($advanced.chunk_size) not in ["", "None"]:
-    #set $chunk_size_arg = "--chunk-size '%s'" % $advanced.chunk_size
+#if $advanced.chunk_size.mode == "custom":
+    #set $chunk_size_arg = "--chunk-size '%s'" % $advanced.chunk_size.value
 #end if
 #set $output_name_arg = ""
 #if str($advanced.output_name) not in ["", "None"]:
@@ -46,10 +46,28 @@ python '$__tool_directory__/run_esmfold.py' \
             <when value="cpu_only" />
         </conditional>
         <section name="advanced" title="Advanced options" expanded="false">
-            <param name="max_tokens_per_batch" type="integer" optional="true" label="Max tokens per batch"
-                help="Leave empty to let the esm-fold CLI choose its default batching behavior." />
-            <param name="chunk_size" type="integer" optional="true" label="Chunk size"
-                help="Lower values reduce memory pressure but make inference slower." />
+            <conditional name="max_tokens_per_batch">
+                <param name="mode" type="select" label="Max tokens per batch">
+                    <option value="default" selected="true">Use esm-fold default</option>
+                    <option value="custom">Set a custom value</option>
+                </param>
+                <when value="default" />
+                <when value="custom">
+                    <param name="value" type="integer" min="1" label="Custom max tokens per batch"
+                        help="Use this only when you need to limit batching for memory reasons." />
+                </when>
+            </conditional>
+            <conditional name="chunk_size">
+                <param name="mode" type="select" label="Chunk size">
+                    <option value="default" selected="true">Use esm-fold default</option>
+                    <option value="custom">Set a custom value</option>
+                </param>
+                <when value="default" />
+                <when value="custom">
+                    <param name="value" type="integer" min="1" label="Custom chunk size"
+                        help="Lower values reduce memory pressure but make inference slower." />
+                </when>
+            </conditional>
             <param name="output_name" type="text" optional="true" label="Output name prefix"
                 help="Defaults to the sanitized FASTA identifier." />
         </section>
