@@ -39,6 +39,14 @@ To enable real inference:
 2. Restart Galaxy.
 3. Upload a single-record FASTA and run `Structure Prediction > ESMFold`.
 
+If the job reaches `Loading model` and then fails with `No module named 'modelcif'`,
+the ESMFold/OpenFold runtime is still missing a Python dependency. Install it into
+the same environment that provides `esm-fold`, for example:
+
+```bash
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
+```
+
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
 ## Reverse Proxy

@@ -165,6 +165,19 @@ def parse_pdb_metrics(path: Path) -> dict:
     }
 
 
+def dependency_error_hint(stderr: str) -> str | None:
+    if "No module named 'modelcif'" in stderr:
+        esmfold_python = os.environ.get("ESMFOLD_PYTHON")
+        if not esmfold_python:
+            env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+            esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
+        return (
+            "The ESMFold runtime is missing the Python package 'modelcif'. "
+            f"Install it into the ESMFold environment, for example: {esmfold_python} -m pip install modelcif"
+        )
+    return None
+
+
 def main() -> int:
     args = parse_args()
     input_path = Path(args.input_fasta)
@@ -213,6 +226,9 @@ def main() -> int:
         if completed.returncode != 0:
             sys.stderr.write(completed.stderr)
             sys.stdout.write(completed.stdout)
+            hint = dependency_error_hint(completed.stderr)
+            if hint:
+                raise RuntimeError(hint)
             raise RuntimeError(f"esm-fold exited with status {completed.returncode}")
 
         pdb_path = find_single_pdb(output_dir)

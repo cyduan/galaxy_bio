@@ -21,6 +21,15 @@ That keeps the wrapper neutral with respect to how you want to deploy it:
 - inside a custom Docker image
 - through a GPU-specific Slurm or Kubernetes destination later
 
+When ESMFold is installed through an OpenFold-based environment, make sure the
+runtime dependencies pulled in by OpenFold are complete as well. In particular,
+if Galaxy reports ``No module named 'modelcif'`` while loading the model, install
+that package into the same ESMFold environment:
+
+```bash
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
+```
+
 ## Local verification
 
 You can verify the wrapper logic without a real ESMFold installation by using the built-in mock mode:
