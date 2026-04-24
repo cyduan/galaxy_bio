@@ -47,6 +47,16 @@ the same environment that provides `esm-fold`, for example:
 /home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
 ```
 
+If the traceback instead ends with `No module named 'torch._six'`, the current
+DeepSpeed package in the ESMFold environment is too old for your installed
+PyTorch. The current OpenFold main environment uses PyTorch 2.5 together with
+`deepspeed==0.14.5`, so align that environment or remove DeepSpeed entirely if
+you do not need its optional acceleration path:
+
+```bash
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install "deepspeed==0.14.5"
+```
+
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
 ## Reverse Proxy

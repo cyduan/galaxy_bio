@@ -175,6 +175,19 @@ def dependency_error_hint(stderr: str) -> str | None:
             "The ESMFold runtime is missing the Python package 'modelcif'. "
             f"Install it into the ESMFold environment, for example: {esmfold_python} -m pip install modelcif"
         )
+    if "No module named 'torch._six'" in stderr:
+        env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+        esmfold_python = os.environ.get("ESMFOLD_PYTHON")
+        if not esmfold_python:
+            esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
+        return (
+            "The ESMFold runtime has an incompatible DeepSpeed/PyTorch combination. "
+            "Your current traceback indicates an older DeepSpeed build that still imports torch._six. "
+            f"If you keep the current OpenFold 2.2 / PyTorch 2 stack, align the environment with: "
+            f"{esmfold_python} -m pip install 'deepspeed==0.14.5'. "
+            "As a quick workaround, removing DeepSpeed from the ESMFold environment can also allow "
+            "OpenFold to skip the optional DeepSpeed kernel path."
+        )
     return None
 
 

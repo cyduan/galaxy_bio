@@ -30,6 +30,20 @@ that package into the same ESMFold environment:
 /home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
 ```
 
+If Galaxy instead reports ``No module named 'torch._six'`` while importing
+DeepSpeed, the ESMFold environment has a version mismatch between DeepSpeed
+and PyTorch. The current OpenFold ``main`` environment pins PyTorch 2.5 and
+``deepspeed==0.14.5``. If you keep that newer OpenFold stack, align the same
+environment accordingly:
+
+```bash
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install "deepspeed==0.14.5"
+```
+
+If you do not need DeepSpeed acceleration, removing DeepSpeed from the ESMFold
+environment is also a valid fallback so OpenFold can skip the optional kernel
+path entirely.
+
 ## Local verification
 
 You can verify the wrapper logic without a real ESMFold installation by using the built-in mock mode:
