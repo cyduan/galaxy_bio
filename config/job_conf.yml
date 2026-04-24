@@ -19,14 +19,14 @@ execution:
 
     esmfold_local:
       runner: local
-      # The first ESMFold wrapper runs directly in the Galaxy job environment.
-      # Install the `esm-fold` CLI on PATH, or set ESMFOLD_BINARY to point to
-      # your own launcher script or virtual environment entrypoint.
-      #
-      # Example:
+      env:
+        - name: ESMFOLD_BINARY
+          value: /home/ubuntu/miniconda3/envs/esmfold39/bin/esm-fold
+      # Fallback for environments that expose the fair-esm Python API but do
+      # not ship the `esm-fold` console entrypoint:
       # env:
-      #   - name: ESMFOLD_BINARY
-      #     value: /home/ubuntu/miniconda3/envs/esmfold/bin/esm-fold
+      #   - name: ESMFOLD_PYTHON
+      #     value: /home/ubuntu/miniconda3/envs/esmfold39/bin/python
 
     docker_local:
       runner: local

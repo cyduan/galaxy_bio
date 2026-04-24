@@ -79,8 +79,16 @@ def resolve_command(command: str) -> list[str]:
         sibling_executable = Path(sys.executable).resolve().with_name("esm-fold")
         if sibling_executable.exists():
             return [str(sibling_executable)]
-        if importlib.util.find_spec("esm.scripts.fold") is not None:
+        try:
+            has_fold_module = importlib.util.find_spec("esm.scripts.fold") is not None
+        except ModuleNotFoundError:
+            has_fold_module = False
+        if has_fold_module:
             return [sys.executable, "-m", "esm.scripts.fold"]
+        esmfold_python = os.environ.get("ESMFOLD_PYTHON")
+        if esmfold_python:
+            helper_cli = Path(__file__).resolve().parent / "esmfold_api_cli.py"
+            return [esmfold_python, str(helper_cli)]
     return split_command(command)
 
 

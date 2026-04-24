@@ -110,7 +110,9 @@ Admin notes
 
 This first wrapper targets the official ``esm-fold`` CLI from the `Meta ESM repository <https://github.com/facebookresearch/esm>`_.
 The Galaxy job environment must make that CLI available on ``PATH`` or override it with the ``ESMFOLD_BINARY``
-environment variable. GPU execution is recommended for real workloads.
+environment variable. If your ``fair-esm`` environment exposes the Python API but not the ``esm-fold`` console
+script, you can instead set ``ESMFOLD_PYTHON`` to the Python interpreter from that environment and Galaxy will
+use a bundled compatibility runner. GPU execution is recommended for real workloads.
 
 The wrapper also recognizes ``mock-esmfold`` as a lightweight built-in test mode for local wrapper verification
 and Galaxy tool tests. That mode is only intended for smoke tests, not for real structure prediction.
