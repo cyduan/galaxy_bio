@@ -74,6 +74,10 @@ def resolve_command(command: str) -> list[str]:
     if command == "mock-esmfold":
         mock_cli = Path(__file__).resolve().parent / "test-data" / "mock_esmfold_cli.py"
         return [sys.executable, str(mock_cli)]
+    if command == "esm-fold":
+        sibling_executable = Path(sys.executable).resolve().with_name("esm-fold")
+        if sibling_executable.exists():
+            return [str(sibling_executable)]
     return split_command(command)
 
 
@@ -146,7 +150,15 @@ def main() -> int:
         elif args.cpu_offload:
             command.append("--cpu-offload")
 
-        completed = subprocess.run(command, capture_output=True, text=True)
+        try:
+            completed = subprocess.run(command, capture_output=True, text=True)
+        except FileNotFoundError as exc:
+            attempted_command = command[0] if command else args.esmfold_command
+            raise RuntimeError(
+                "Could not find the ESMFold executable "
+                f"'{attempted_command}'. Install the official 'esm-fold' CLI in Galaxy's job environment, "
+                "or set ESMFOLD_BINARY / --esmfold-command to the absolute executable path."
+            ) from exc
         if completed.returncode != 0:
             sys.stderr.write(completed.stderr)
             sys.stdout.write(completed.stdout)

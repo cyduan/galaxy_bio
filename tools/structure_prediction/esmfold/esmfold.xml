@@ -20,7 +20,11 @@
 #if str($advanced.output_name) not in ["", "None"]:
     #set $output_name_arg = "--output-name '%s'" % $advanced.output_name
 #end if
-python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-pdb 'result.pdb' --summary-json 'summary.json' --esmfold-command '$esmfold_command' --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg $output_name_arg
+#set $esmfold_command_arg = ""
+#if str($esmfold_command) not in ["", "None"]:
+    #set $esmfold_command_arg = "--esmfold-command '%s'" % $esmfold_command
+#end if
+python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-pdb 'result.pdb' --summary-json 'summary.json' $esmfold_command_arg --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg $output_name_arg
     ]]></command>
     <inputs>
         <param name="sequence" type="data" format="fasta" label="Protein sequence (single FASTA record)"
@@ -62,7 +66,7 @@ python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-p
             <param name="output_name" type="text" optional="true" label="Output name prefix"
                 help="Defaults to the sanitized FASTA identifier." />
         </section>
-        <param name="esmfold_command" type="hidden" value="esm-fold" />
+        <param name="esmfold_command" type="hidden" value="" />
     </inputs>
     <outputs>
         <data name="pdb_model" format="pdb" from_work_dir="result.pdb" label="${tool.name} on ${on_string}: structure model" />

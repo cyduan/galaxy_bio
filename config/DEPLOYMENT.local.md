@@ -35,7 +35,7 @@ By default, `config/job_conf.yml` routes the `esmfold` tool to `esmfold_local`, 
 
 To enable real inference:
 
-1. Install the ESMFold runtime where Galaxy jobs can see it, or export `ESMFOLD_BINARY` to your own launcher.
+1. Install the ESMFold runtime where Galaxy jobs can see it, or set `ESMFOLD_BINARY` in `config/job_conf.yml` to your own launcher path.
 2. Restart Galaxy.
 3. Upload a single-record FASTA and run `Structure Prediction > ESMFold`.
 
