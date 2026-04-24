@@ -6,6 +6,7 @@ import argparse
 import importlib.util
 import json
 import os
+from os.path import expanduser
 import re
 import shlex
 import shutil
@@ -71,14 +72,47 @@ def split_command(command: str) -> list[str]:
     return shlex.split(command, posix=(os.name != "nt"))
 
 
+def iter_esmfold_binary_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[str] = set()
+
+    def add_candidate(path: Path) -> None:
+        resolved = str(path)
+        if resolved not in seen:
+            seen.add(resolved)
+            candidates.append(path)
+
+    current_python = Path(sys.executable).resolve()
+    add_candidate(current_python.with_name("esm-fold"))
+
+    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+
+    current_parts = list(current_python.parts)
+    if "envs" in current_parts:
+        envs_index = current_parts.index("envs")
+        envs_root = Path(*current_parts[: envs_index + 1])
+        add_candidate(envs_root / env_name / "bin" / "esm-fold")
+
+    conda_exe = os.environ.get("CONDA_EXE")
+    if conda_exe:
+        conda_path = Path(conda_exe).resolve()
+        conda_root = conda_path.parent.parent
+        add_candidate(conda_root / "envs" / env_name / "bin" / "esm-fold")
+
+    add_candidate(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/esm-fold")))
+    add_candidate(Path(expanduser(f"~/anaconda3/envs/{env_name}/bin/esm-fold")))
+    add_candidate(Path(expanduser(f"~/.conda/envs/{env_name}/bin/esm-fold")))
+    return candidates
+
+
 def resolve_command(command: str) -> list[str]:
     if command == "mock-esmfold":
         mock_cli = Path(__file__).resolve().parent / "test-data" / "mock_esmfold_cli.py"
         return [sys.executable, str(mock_cli)]
     if command == "esm-fold":
-        sibling_executable = Path(sys.executable).resolve().with_name("esm-fold")
-        if sibling_executable.exists():
-            return [str(sibling_executable)]
+        for candidate in iter_esmfold_binary_candidates():
+            if candidate.exists():
+                return [str(candidate)]
         try:
             has_fold_module = importlib.util.find_spec("esm.scripts.fold") is not None
         except ModuleNotFoundError:
@@ -165,10 +199,16 @@ def main() -> int:
             completed = subprocess.run(command, capture_output=True, text=True)
         except FileNotFoundError as exc:
             attempted_command = command[0] if command else args.esmfold_command
+            candidate_hint = ""
+            if args.esmfold_command == "esm-fold":
+                candidates = [str(path) for path in iter_esmfold_binary_candidates()]
+                if candidates:
+                    candidate_hint = " Attempted auto-discovery in: " + ", ".join(candidates)
             raise RuntimeError(
                 "Could not find the ESMFold executable "
                 f"'{attempted_command}'. Install the official 'esm-fold' CLI in Galaxy's job environment, "
                 "or set ESMFOLD_BINARY / --esmfold-command to the absolute executable path."
+                f"{candidate_hint}"
             ) from exc
         if completed.returncode != 0:
             sys.stderr.write(completed.stderr)
