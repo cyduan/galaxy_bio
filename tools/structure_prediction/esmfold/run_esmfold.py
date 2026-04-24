@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -78,6 +79,8 @@ def resolve_command(command: str) -> list[str]:
         sibling_executable = Path(sys.executable).resolve().with_name("esm-fold")
         if sibling_executable.exists():
             return [str(sibling_executable)]
+        if importlib.util.find_spec("esm.scripts.fold") is not None:
+            return [sys.executable, "-m", "esm.scripts.fold"]
     return split_command(command)
 
 
