@@ -1,0 +1,50 @@
+<tool id="fasta_to_table" name="FASTA to CSV/XLSX" version="0.1.0" profile="24.0">
+  <description>convert FASTA records into a tabular sequence file</description>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/fasta_to_table.py' --input '$input_fasta' --output-format '$output_format' --output '$output'
+  ]]></command>
+  <inputs>
+    <param name="input_fasta" type="data" format="fasta" label="Input FASTA file" />
+    <param name="output_format" type="select" label="Output format">
+      <option value="csv" selected="true">CSV</option>
+      <option value="xlsx">XLSX</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output" format="csv" label="${tool.name}: ${output_format}">
+      <change_format>
+        <when input="output_format" value="xlsx" format="xlsx" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_fasta" value="fasta_to_table_input.fasta" ftype="fasta" />
+      <param name="output_format" value="csv" />
+      <output name="output" file="fasta_to_table_expected.csv" ftype="csv" />
+    </test>
+    <test>
+      <param name="input_fasta" value="fasta_to_table_input.fasta" ftype="fasta" />
+      <param name="output_format" value="xlsx" />
+      <output name="output" file="fasta_to_table_expected.xlsx" ftype="xlsx" />
+    </test>
+  </tests>
+  <help><![CDATA[
+This tool converts a FASTA dataset into a two-column table with:
+
+- ``name``
+- ``sequence``
+
+Output options
+==============
+
+- ``CSV``
+- ``XLSX``
+
+Notes
+=====
+
+- FASTA headers are preserved as the ``name`` column.
+- Multi-line FASTA sequences are merged into a single sequence string in the table output.
+  ]]></help>
+</tool>

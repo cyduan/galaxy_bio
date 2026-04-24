@@ -2,6 +2,8 @@
 <toolbox monitor="true">
   <section id="sequence_preparation" name="Sequence Preparation">
     <tool file="structure_prediction/table_to_fasta/table_to_fasta.xml" />
+    <tool file="structure_prediction/manual_sequences_to_file/manual_sequences_to_file.xml" />
+    <tool file="structure_prediction/fasta_to_table/fasta_to_table.xml" />
   </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />

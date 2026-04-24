@@ -1,0 +1,91 @@
+<tool id="manual_sequences_to_file" name="Manual Sequences to FASTA/CSV/XLSX" version="0.1.0" profile="24.0">
+  <description>enter one or more named sequences and export them as a file</description>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/manual_sequences_to_file.py' --entries-json '$entries_json' --output-format '$output_format' --output '$output'
+  ]]></command>
+  <configfiles>
+    <configfile name="entries_json">#import json
+#set $payload = []
+#for $entry in $entries
+    #silent $payload.append({"name": str($entry.name or ""), "sequence": str($entry.sequence or "")})
+#end for
+${json.dumps($payload)}
+    </configfile>
+  </configfiles>
+  <inputs>
+    <repeat name="entries" title="Sequence entry" min="1">
+      <param name="name" type="text" optional="true" label="Name"
+        help="Optional. Leave blank to auto-generate 1, 2, 3..." />
+      <param name="sequence" type="text" area="true" label="Sequence"
+        help="Paste a protein or nucleotide sequence. Whitespace and line breaks are removed automatically." />
+    </repeat>
+    <param name="output_format" type="select" label="Output format">
+      <option value="fasta" selected="true">FASTA</option>
+      <option value="csv">CSV</option>
+      <option value="xlsx">XLSX</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output" format="fasta" label="${tool.name}: ${output_format}">
+      <change_format>
+        <when input="output_format" value="csv" format="csv" />
+        <when input="output_format" value="xlsx" format="xlsx" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <repeat name="entries">
+        <param name="name" value="alpha" />
+        <param name="sequence" value="MKT V RQ&#10;ERLK" />
+      </repeat>
+      <repeat name="entries">
+        <param name="name" value="" />
+        <param name="sequence" value="GGHSKVGKSA" />
+      </repeat>
+      <param name="output_format" value="fasta" />
+      <output name="output" file="manual_sequences_expected.fasta" />
+    </test>
+    <test>
+      <repeat name="entries">
+        <param name="name" value="alpha" />
+        <param name="sequence" value="MKTVRQERLK" />
+      </repeat>
+      <repeat name="entries">
+        <param name="name" value="beta" />
+        <param name="sequence" value="GGHSKVGKSA" />
+      </repeat>
+      <param name="output_format" value="csv" />
+      <output name="output" file="manual_sequences_expected.csv" ftype="csv" />
+    </test>
+    <test>
+      <repeat name="entries">
+        <param name="name" value="alpha" />
+        <param name="sequence" value="MKTVRQERLK" />
+      </repeat>
+      <repeat name="entries">
+        <param name="name" value="beta" />
+        <param name="sequence" value="GGHSKVGKSA" />
+      </repeat>
+      <param name="output_format" value="xlsx" />
+      <output name="output" file="manual_sequences_expected.xlsx" ftype="xlsx" />
+    </test>
+  </tests>
+  <help><![CDATA[
+This tool lets you type or paste one or more sequences directly into the Galaxy form.
+
+How to use it
+=============
+
+1. Enter a sequence name and sequence text in the first row.
+2. Click the **+** button to add another sequence entry.
+3. Choose the output format: ``FASTA``, ``CSV``, or ``XLSX``.
+
+Notes
+=====
+
+- **Name** is optional. If left blank, Galaxy will generate ``1``, ``2``, ``3`` ...
+- Sequence whitespace and line breaks are removed automatically before export.
+- ``CSV`` and ``XLSX`` outputs use the columns ``name`` and ``sequence``.
+  ]]></help>
+</tool>
