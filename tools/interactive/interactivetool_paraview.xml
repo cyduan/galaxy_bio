@@ -10,8 +10,8 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="SERVER_NAME" strip="True">localhost:2718</environment_variable>
-        <environment_variable name="PROTOCOL">wss</environment_variable>
+        <environment_variable name="SERVER_NAME" strip="True">${str($__galaxy_url__).replace("http://", "").replace("https://", "").rstrip("/")}</environment_variable>
+        <environment_variable name="PROTOCOL" strip="True">${'wss' if str($__galaxy_url__).startswith('https://') else 'ws'}</environment_variable>
         <environment_variable name="EXTRA_PVPYTHON_ARGS">-dr,--mesa-swr</environment_variable>
     </environment_variables>
     <command><![CDATA[

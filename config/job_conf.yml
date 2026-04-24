@@ -1,4 +1,4 @@
-## Local + Docker job config for a Galaxy instance bound to localhost:2718. ##
+## Job config for a Galaxy instance listening on 0.0.0.0:2718. ##
 
 runners:
   local:
@@ -36,11 +36,13 @@ execution:
       #docker_set_user: $UID
       docker_set_user:
 
-      # For a single-node localhost deployment, Galaxy itself is reachable on
-      # http://localhost:2718. Docker containers cannot call back to that value
-      # on Linux, so switch galaxy_infrastructure_url in config/galaxy.yml to a
-      # real hostname (for example galaxy.local or your server FQDN) and
-      # uncomment the matching add-host line here.
+      # This repository currently uses galaxy_infrastructure_url:
+      #   http://${HOST_IP}:2718
+      # for a no-hardcoded-IP default. If Docker-backed Interactive Tools
+      # cannot call back to that address from containers on your host, switch
+      # galaxy_infrastructure_url in config/galaxy.yml to a DNS name or host
+      # alias the containers can resolve and uncomment the matching add-host
+      # line here.
       #
       # Example pair:
       #   galaxy_infrastructure_url: http://galaxy.local:2718

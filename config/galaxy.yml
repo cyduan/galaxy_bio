@@ -1,6 +1,6 @@
 gravity:
   gunicorn:
-    bind: localhost:2718
+    bind: 0.0.0.0:2718
 
   gx_it_proxy:
     enable: true
@@ -18,15 +18,15 @@ galaxy:
   interactivetools_map: database/interactivetools_map.sqlite
   outputs_to_working_directory: true
 
-  # This keeps the main UI reachable at http://localhost:2718 for local access
-  # and SSH tunnels. Before running Docker-backed Interactive Tools across hosts,
-  # replace "localhost" with a hostname or FQDN that the containers can resolve
-  # and keep config/job_conf.yml in sync with that hostname mapping.
-  galaxy_infrastructure_url: http://localhost:2718
+  # Dynamic host IP keeps the repository free of hard-coded addresses. For a
+  # stable public deployment, replace ${HOST_IP} with your DDNS name or FQDN.
+  galaxy_infrastructure_url: http://${HOST_IP}:2718
   galaxy_infrastructure_web_port: 2718
 
-  # Direct proxy mode is the simplest one-box setup. If you later front Galaxy
-  # with nginx or another reverse proxy, switch this to true and proxy IT
-  # traffic upstream instead of exposing the IT proxy directly.
+  # Direct proxy mode keeps Interactive Tools working without an upstream
+  # reverse proxy. For a more production-style setup behind nginx or Caddy,
+  # switch this to true and route IT traffic through the proxy instead.
   interactivetools_upstream_proxy: false
-  interactivetools_proxy_host: localhost:4002
+  # Replace this hostname with the same public DNS/DDNS name that users will
+  # use to reach Galaxy if you want Interactive Tools to work externally.
+  interactivetools_proxy_host: galaxy.example.com:4002
