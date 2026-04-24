@@ -1,0 +1,62 @@
+<tool id="table_to_fasta" name="CSV/XLSX to FASTA" version="0.1.0" profile="24.0">
+  <description>build FASTA sequence files from spreadsheets or tables</description>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/table_to_fasta.py' --input '$table' --input-format '$table.ext' --name-column '$name_column' --sequence-column '$sequence_column' --output '$output'
+  ]]></command>
+  <inputs>
+    <param name="table" type="data" format="csv,xlsx,tabular,txt" label="Input table or spreadsheet" />
+    <param name="name_column" type="text" optional="true" value="name"
+      label="Name column"
+      help="Use a header name, a 1-based column number, or an Excel column letter. Leave this blank to auto-generate 1, 2, 3... names." />
+    <param name="sequence_column" type="text" value="sequence"
+      label="Sequence column"
+      help="Use a header name, a 1-based column number, or an Excel column letter." />
+  </inputs>
+  <outputs>
+    <data name="output" format="fasta" label="${tool.name} on ${on_string}: FASTA" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="table" value="default_headers.csv" ftype="csv" />
+      <output name="output" file="default_headers_expected.fasta" />
+    </test>
+    <test>
+      <param name="table" value="sequence_only.csv" ftype="csv" />
+      <output name="output" file="sequence_only_expected.fasta" />
+    </test>
+    <test>
+      <param name="table" value="custom_headers.xlsx" ftype="xlsx" />
+      <param name="name_column" value="id" />
+      <param name="sequence_column" value="peptide" />
+      <output name="output" file="custom_headers_expected.fasta" />
+    </test>
+  </tests>
+  <help><![CDATA[
+This tool converts a simple sequence table into a FASTA file.
+
+Supported inputs
+================
+
+- ``csv``
+- ``xlsx``
+- delimiter-separated text tables that Galaxy identifies as ``tabular`` or ``txt``
+
+Column selection
+================
+
+For both the **Name column** and **Sequence column** parameters, you can use:
+
+- the column header name such as ``name`` or ``sequence``
+- a 1-based column number such as ``1`` or ``2``
+- an Excel-style column letter such as ``A`` or ``B``
+
+By default the tool looks for columns named ``name`` and ``sequence``.
+
+Automatic names
+===============
+
+If the input only has a sequence column, or if you leave **Name column** blank,
+the tool automatically generates FASTA identifiers ``1``, ``2``, ``3`` ...
+in output order.
+  ]]></help>
+</tool>
