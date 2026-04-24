@@ -7,6 +7,8 @@ gravity:
     port: 4002
 
 galaxy:
+  admin_users: dcy25@mails.tsinghua.edu.cn
+
   job_config_file: job_conf.yml
 
   tool_config_file:
