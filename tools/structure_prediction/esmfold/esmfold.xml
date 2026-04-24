@@ -20,16 +20,7 @@
 #if str($advanced.output_name) not in ["", "None"]:
     #set $output_name_arg = "--output-name '%s'" % $advanced.output_name
 #end if
-python '$__tool_directory__/run_esmfold.py' \
-    --input-fasta '$sequence' \
-    --output-pdb 'result.pdb' \
-    --summary-json 'summary.json' \
-    --esmfold-command '$esmfold_command' \
-    --num-recycles '$num_recycles' \
-    $execution_mode_arg \
-    $max_tokens_arg \
-    $chunk_size_arg \
-    $output_name_arg
+python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-pdb 'result.pdb' --summary-json 'summary.json' --esmfold-command '$esmfold_command' --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg $output_name_arg
     ]]></command>
     <inputs>
         <param name="sequence" type="data" format="fasta" label="Protein sequence (single FASTA record)"
