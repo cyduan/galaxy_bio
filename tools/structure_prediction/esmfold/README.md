@@ -52,6 +52,27 @@ For the most reproducible setup, rebuilding a clean environment from the
 archived Meta ``environment.yml`` is safer than mixing newer PyTorch/OpenFold
 packages into an existing environment.
 
+If installing the pinned OpenFold commit fails because the server cannot reach
+GitHub, use a local source checkout or a transferred source archive instead of
+letting `pip` clone the repository directly. For example, if an existing
+OpenFold checkout is available on the server and already contains the pinned
+commit:
+
+```bash
+git clone --no-hardlinks /data/tools/Repo/openfold_1 /data/tools/Repo/openfold_esmfold_pinned
+cd /data/tools/Repo/openfold_esmfold_pinned
+git checkout 4b41059694619831a7db195b7e0988fc4ff3a307
+/data/conda_envs/esmfold_official/bin/python -m pip install -e .
+```
+
+If the local checkout does not contain that commit, download the source archive
+on a machine that can access GitHub, transfer it to the server, and install the
+archive with:
+
+```bash
+/data/conda_envs/esmfold_official/bin/python -m pip install /data/tools/sources/openfold-4b41059694619831a7db195b7e0988fc4ff3a307.tar.gz
+```
+
 ## Local verification
 
 You can verify the wrapper logic without a real ESMFold installation by using the built-in mock mode:

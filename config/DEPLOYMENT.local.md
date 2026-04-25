@@ -66,6 +66,25 @@ OpenFold checkout is shadowing the pinned ESMFold dependency. Remove the
 conflicting OpenFold install and rebuild the ESMFold environment against the
 official pinned commit.
 
+If the pinned OpenFold install fails while cloning from GitHub, the server is
+usually hitting a network timeout rather than an ESMFold package error. Reuse a
+local checkout if it already contains the pinned commit:
+
+```bash
+git clone --no-hardlinks /data/tools/Repo/openfold_1 /data/tools/Repo/openfold_esmfold_pinned
+cd /data/tools/Repo/openfold_esmfold_pinned
+git checkout 4b41059694619831a7db195b7e0988fc4ff3a307
+/data/conda_envs/esmfold_official/bin/python -m pip install -e .
+```
+
+If that commit is not available locally, download the OpenFold source archive on
+a machine with GitHub access, transfer it to the server, and install the archive
+with:
+
+```bash
+/data/conda_envs/esmfold_official/bin/python -m pip install /data/tools/sources/openfold-4b41059694619831a7db195b7e0988fc4ff3a307.tar.gz
+```
+
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
 ## BLAST
