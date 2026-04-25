@@ -44,7 +44,7 @@ the ESMFold/OpenFold runtime is still missing a Python dependency. Install it in
 the same environment that provides `esm-fold`, for example:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
+/data/conda_envs/esmfold_official/bin/python -m pip install modelcif
 ```
 
 If the traceback instead ends with `No module named 'torch._six'`, the current
@@ -54,7 +54,7 @@ the pinned OpenFold commit from the README instead of mixing in newer OpenFold
 and PyTorch packages:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install \
+/data/conda_envs/esmfold_official/bin/python -m pip install \
   'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
 

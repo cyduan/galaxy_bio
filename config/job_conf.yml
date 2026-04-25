@@ -20,13 +20,19 @@ execution:
     esmfold_local:
       runner: local
       env:
+        - name: ESMFOLD_ENV_NAME
+          value: esmfold_official
         - name: ESMFOLD_BINARY
-          value: /home/ubuntu/miniconda3/envs/esmfold39/bin/esm-fold
+          value: /data/conda_envs/esmfold_official/bin/esm-fold
+        - name: ESMFOLD_PYTHON
+          value: /data/conda_envs/esmfold_official/bin/python
+        - name: TORCH_HOME
+          value: /data/cache/torch
       # Fallback for environments that expose the fair-esm Python API but do
       # not ship the `esm-fold` console entrypoint:
       # env:
       #   - name: ESMFOLD_PYTHON
-      #     value: /home/ubuntu/miniconda3/envs/esmfold39/bin/python
+      #     value: /data/conda_envs/esmfold_official/bin/python
 
     blast_local:
       runner: local

@@ -85,7 +85,7 @@ def iter_esmfold_binary_candidates() -> list[Path]:
     current_python = Path(sys.executable).resolve()
     add_candidate(current_python.with_name("esm-fold"))
 
-    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold_official")
 
     current_parts = list(current_python.parts)
     if "envs" in current_parts:
@@ -102,6 +102,7 @@ def iter_esmfold_binary_candidates() -> list[Path]:
     add_candidate(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/esm-fold")))
     add_candidate(Path(expanduser(f"~/anaconda3/envs/{env_name}/bin/esm-fold")))
     add_candidate(Path(expanduser(f"~/.conda/envs/{env_name}/bin/esm-fold")))
+    add_candidate(Path(f"/data/conda_envs/{env_name}/bin/esm-fold"))
     return candidates
 
 
@@ -166,10 +167,10 @@ def parse_pdb_metrics(path: Path) -> dict:
 
 
 def dependency_error_hint(stderr: str) -> str | None:
-    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold_official")
     esmfold_python = os.environ.get("ESMFOLD_PYTHON")
     if not esmfold_python:
-        esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
+        esmfold_python = str(Path(f"/data/conda_envs/{env_name}/bin/python"))
 
     if "No module named 'modelcif'" in stderr:
         return (

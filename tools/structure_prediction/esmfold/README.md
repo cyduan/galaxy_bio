@@ -27,7 +27,7 @@ if Galaxy reports ``No module named 'modelcif'`` while loading the model, instal
 that package into the same ESMFold environment:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install modelcif
+/data/conda_envs/esmfold_official/bin/python -m pip install modelcif
 ```
 
 If Galaxy instead reports ``No module named 'torch._six'`` while importing
@@ -36,7 +36,7 @@ stack. The official repository instead recommends either building the provided
 ``environment.yml`` or installing the pinned OpenFold commit from the README:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install \
+/data/conda_envs/esmfold_official/bin/python -m pip install \
   'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
 
