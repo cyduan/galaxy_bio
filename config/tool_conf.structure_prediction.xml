@@ -10,5 +10,7 @@
   </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />
+    <tool file="structure_prediction/rfd3_design/rfd3_design.xml" />
+    <tool file="structure_prediction/foundry_mpnn/foundry_mpnn.xml" />
   </section>
 </toolbox>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="foundry_mpnn" name="Foundry ProteinMPNN" version="0.1.0" profile="24.0">
+    <description>run the Foundry ProteinMPNN CLI on a structure dataset</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $config_arg = ""
+#if str($config) not in ["", "None"]:
+    #set $config_arg = "--config '%s'" % $config
+#end if
+#set $weights_arg = ""
+#if str($weights) not in ["", "None"]:
+    #set $weights_arg = "--weights '%s'" % $weights
+#end if
+#set $mpnn_command_arg = ""
+#if str($mpnn_command) not in ["", "None"]:
+    #set $mpnn_command_arg = "--mpnn-command '%s'" % $mpnn_command
+#end if
+python '$__tool_directory__/run_foundry_mpnn.py' --structure '$structure' $config_arg $weights_arg --arguments '$arguments' $mpnn_command_arg --out-dir 'mpnn_output' --summary-json 'mpnn_summary.json' --archive 'mpnn_outputs.zip' --sequences-fasta 'mpnn_sequences.fasta'
+    ]]></command>
+    <inputs>
+        <param name="structure" type="data" format="pdb,cif,mmcif" label="Input backbone or complex structure" />
+        <param name="config" type="data" format="json,yaml,txt" optional="true" label="Optional Foundry MPNN configuration" />
+        <param name="weights" type="text" optional="true" label="Optional weights path"
+            help="Use __WEIGHTS__ in the argument template to insert this path." />
+        <param name="arguments" type="text" label="Foundry mpnn CLI arguments"
+            value="__STRUCTURE__ __OUTPUT_DIR__"
+            help="Use placeholders: __STRUCTURE__, __OUTPUT_DIR__, __CONFIG__, __WEIGHTS__. Check mpnn --help after installing Foundry and replace this template with the exact arguments for your MPNN mode." />
+        <param name="mpnn_command" type="hidden" value="" />
+    </inputs>
+    <outputs>
+        <data name="sequences_fasta" format="fasta" from_work_dir="mpnn_sequences.fasta" label="${tool.name} on ${on_string}: designed sequences" />
+        <data name="summary_json" format="json" from_work_dir="mpnn_summary.json" label="${tool.name} on ${on_string}: run summary" />
+        <data name="output_archive" format="zip" from_work_dir="mpnn_outputs.zip" label="${tool.name} on ${on_string}: output archive" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="structure" value="mpnn_dummy.pdb" />
+            <param name="arguments" value="unused" />
+            <param name="mpnn_command" value="mock-mpnn" />
+            <output name="sequences_fasta" file="mpnn_expected.fasta" />
+            <output name="summary_json">
+                <assert_contents>
+                    <has_text text="&quot;tool&quot;: &quot;Foundry ProteinMPNN&quot;" />
+                    <has_text text="mock_sequences.fasta" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+This wrapper delegates to the Foundry ``mpnn`` command and collects FASTA files
+plus the full output directory. The current Foundry README marks the MPNN command
+line and JSON interfaces as still being documented, so the Galaxy tool exposes a
+CLI argument template rather than hard-coding unstable option names.
+
+Use these placeholders inside the argument template:
+
+- ``__STRUCTURE__``: copied Galaxy structure input
+- ``__OUTPUT_DIR__``: output directory for the MPNN run
+- ``__CONFIG__``: optional copied JSON/YAML configuration
+- ``__WEIGHTS__``: optional weights path field
+
+After installing Foundry, run ``mpnn --help`` in the server environment and use
+the exact documented command arguments in this field.
+    ]]></help>
+</tool>

@@ -44,6 +44,20 @@ execution:
         - name: BLASTP_BINARY
           value: /home/ubuntu/miniconda3/envs/blastenv/bin/blastp
 
+    foundry_local:
+      runner: local
+      env:
+        - name: FOUNDRY_ENV_NAME
+          value: foundry
+        - name: RFD3_BINARY
+          value: /data/conda_envs/foundry/bin/rfd3
+        - name: MPNN_BINARY
+          value: /data/conda_envs/foundry/bin/mpnn
+        - name: FOUNDRY_CHECKPOINT_DIRS
+          value: /data/models/foundry/checkpoints
+        - name: TORCH_HOME
+          value: /data/cache/torch
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -108,3 +122,7 @@ tools:
   environment: esmfold_local
 - id: blast_search
   environment: blast_local
+- id: rfd3_design
+  environment: foundry_local
+- id: foundry_mpnn
+  environment: foundry_local

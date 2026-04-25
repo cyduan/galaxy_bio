@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="rfd3_design" name="RFDiffusion3" version="0.1.0" profile="24.0">
+    <description>generate protein, nucleic-acid, and ligand-conditioned designs with Foundry RFD3</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $structure_arg = ""
+#set $config_arg = ""
+#set $length_arg = ""
+#set $contig_arg = ""
+#set $ligand_arg = ""
+#set $unindex_arg = ""
+#set $ori_token_arg = ""
+#set $infer_ori_strategy_arg = ""
+#set $is_non_loopy_arg = ""
+#set $redesign_motif_sidechains_arg = ""
+#set $partial_t_arg = ""
+#set $select_fixed_atoms_arg = ""
+#set $select_hotspots_arg = ""
+#set $select_buried_arg = ""
+#set $select_exposed_arg = ""
+#set $select_hbond_donors_arg = ""
+#set $select_hbond_acceptors_arg = ""
+#set $select_unfixed_sequence_arg = ""
+#if $input_source.mode == "raw_config":
+    #set $config_arg = "--config '%s'" % $input_source.config
+    #if str($input_source.structure) not in ["", "None"]:
+        #set $structure_arg = "--structure '%s'" % $input_source.structure
+    #end if
+#elif $input_source.mode == "de_novo":
+    #set $length_arg = "--length '%s'" % $input_source.length
+#elif $input_source.mode == "protein_binder":
+    #set $structure_arg = "--structure '%s'" % $input_source.structure
+    #set $contig_arg = "--contig '%s'" % $input_source.contig
+    #if str($input_source.length) not in ["", "None"]:
+        #set $length_arg = "--length '%s'" % $input_source.length
+    #end if
+    #if str($input_source.select_hotspots_json) not in ["", "None"]:
+        #set $select_hotspots_arg = "--select-hotspots-json '%s'" % $input_source.select_hotspots_json
+    #end if
+    #set $infer_ori_strategy_arg = "--infer-ori-strategy '%s'" % $input_source.infer_ori_strategy
+    #set $is_non_loopy_arg = "--is-non-loopy '%s'" % $input_source.is_non_loopy
+#elif $input_source.mode == "nucleic_acid_binder":
+    #set $structure_arg = "--structure '%s'" % $input_source.structure
+    #set $contig_arg = "--contig '%s'" % $input_source.contig
+    #set $length_arg = "--length '%s'" % $input_source.length
+    #if str($input_source.ori_token) not in ["", "None"]:
+        #set $ori_token_arg = "--ori-token '%s'" % $input_source.ori_token
+    #end if
+    #if str($input_source.select_fixed_atoms_json) not in ["", "None"]:
+        #set $select_fixed_atoms_arg = "--select-fixed-atoms-json '%s'" % $input_source.select_fixed_atoms_json
+    #end if
+    #if str($input_source.select_hbond_donors_json) not in ["", "None"]:
+        #set $select_hbond_donors_arg = "--select-hbond-donors-json '%s'" % $input_source.select_hbond_donors_json
+    #end if
+    #if str($input_source.select_hbond_acceptors_json) not in ["", "None"]:
+        #set $select_hbond_acceptors_arg = "--select-hbond-acceptors-json '%s'" % $input_source.select_hbond_acceptors_json
+    #end if
+    #set $is_non_loopy_arg = "--is-non-loopy '%s'" % $input_source.is_non_loopy
+#elif $input_source.mode == "small_molecule_binder":
+    #set $structure_arg = "--structure '%s'" % $input_source.structure
+    #set $ligand_arg = "--ligand '%s'" % $input_source.ligand
+    #set $length_arg = "--length '%s'" % $input_source.length
+    #if str($input_source.select_fixed_atoms_json) not in ["", "None"]:
+        #set $select_fixed_atoms_arg = "--select-fixed-atoms-json '%s'" % $input_source.select_fixed_atoms_json
+    #end if
+    #if str($input_source.select_buried_json) not in ["", "None"]:
+        #set $select_buried_arg = "--select-buried-json '%s'" % $input_source.select_buried_json
+    #end if
+    #if str($input_source.select_exposed_json) not in ["", "None"]:
+        #set $select_exposed_arg = "--select-exposed-json '%s'" % $input_source.select_exposed_json
+    #end if
+#elif $input_source.mode == "enzyme":
+    #set $structure_arg = "--structure '%s'" % $input_source.structure
+    #set $ligand_arg = "--ligand '%s'" % $input_source.ligand
+    #set $unindex_arg = "--unindex '%s'" % $input_source.unindex
+    #set $length_arg = "--length '%s'" % $input_source.length
+    #if str($input_source.select_fixed_atoms_json) not in ["", "None"]:
+        #set $select_fixed_atoms_arg = "--select-fixed-atoms-json '%s'" % $input_source.select_fixed_atoms_json
+    #end if
+    #if str($input_source.select_unfixed_sequence) not in ["", "None"]:
+        #set $select_unfixed_sequence_arg = "--select-unfixed-sequence '%s'" % $input_source.select_unfixed_sequence
+    #end if
+    #set $redesign_motif_sidechains_arg = "--redesign-motif-sidechains '%s'" % $input_source.redesign_motif_sidechains
+    #if str($input_source.partial_t) not in ["", "None"]:
+        #set $partial_t_arg = "--partial-t '%s'" % $input_source.partial_t
+    #end if
+#end if
+#set $ckpt_arg = ""
+#if str($advanced.ckpt_path) not in ["", "None"]:
+    #set $ckpt_arg = "--ckpt-path '%s'" % $advanced.ckpt_path
+#end if
+#set $n_batches_arg = ""
+#if str($advanced.n_batches) not in ["", "None"]:
+    #set $n_batches_arg = "--n-batches '%s'" % $advanced.n_batches
+#end if
+#set $diffusion_batch_size_arg = ""
+#if str($advanced.diffusion_batch_size) not in ["", "None"]:
+    #set $diffusion_batch_size_arg = "--diffusion-batch-size '%s'" % $advanced.diffusion_batch_size
+#end if
+#set $num_timesteps_arg = ""
+#if str($advanced.num_timesteps) not in ["", "None"]:
+    #set $num_timesteps_arg = "--num-timesteps '%s'" % $advanced.num_timesteps
+#end if
+#set $step_scale_arg = ""
+#if str($advanced.step_scale) not in ["", "None"]:
+    #set $step_scale_arg = "--step-scale '%s'" % $advanced.step_scale
+#end if
+#set $gamma_0_arg = ""
+#if str($advanced.gamma_0) not in ["", "None"]:
+    #set $gamma_0_arg = "--gamma-0 '%s'" % $advanced.gamma_0
+#end if
+#set $low_memory_arg = ""
+#if str($advanced.low_memory_mode) == "true":
+    #set $low_memory_arg = "--low-memory-mode"
+#end if
+#set $dump_trajectories_arg = ""
+#if str($advanced.dump_trajectories) == "true":
+    #set $dump_trajectories_arg = "--dump-trajectories"
+#end if
+#set $additional_overrides_arg = ""
+#if str($advanced.additional_overrides) not in ["", "None"]:
+    #set $additional_overrides_arg = "--additional-overrides '%s'" % $advanced.additional_overrides
+#end if
+#set $rfd3_command_arg = ""
+#if str($rfd3_command) not in ["", "None"]:
+    #set $rfd3_command_arg = "--rfd3-command '%s'" % $rfd3_command
+#end if
+python '$__tool_directory__/run_rfd3.py' --mode '$input_source.mode' --run-name '$run_name' --out-dir 'rfd3_output' --prepared-input 'rfd3_inputs.json' --summary-json 'rfd3_summary.json' --archive 'rfd3_outputs.zip' --structures-dir 'galaxy_structures' $rfd3_command_arg $config_arg $structure_arg $length_arg $contig_arg $ligand_arg $unindex_arg $ori_token_arg $infer_ori_strategy_arg $is_non_loopy_arg $redesign_motif_sidechains_arg $partial_t_arg $select_fixed_atoms_arg $select_hotspots_arg $select_buried_arg $select_exposed_arg $select_hbond_donors_arg $select_hbond_acceptors_arg $select_unfixed_sequence_arg $ckpt_arg $n_batches_arg $diffusion_batch_size_arg $num_timesteps_arg $step_scale_arg $gamma_0_arg $low_memory_arg $dump_trajectories_arg $additional_overrides_arg
+    ]]></command>
+    <inputs>
+        <param name="run_name" type="text" value="galaxy_rfd3_design" label="Run name" />
+        <conditional name="input_source">
+            <param name="mode" type="select" label="RFDiffusion3 design scenario">
+                <option value="raw_config">Raw RFD3 input specification (JSON/YAML)</option>
+                <option value="de_novo" selected="true">De novo fixed-length design</option>
+                <option value="protein_binder">Protein binder design</option>
+                <option value="nucleic_acid_binder">Nucleic-acid binder design</option>
+                <option value="small_molecule_binder">Small-molecule binder design</option>
+                <option value="enzyme">Enzyme / motif-conditioned design</option>
+            </param>
+            <when value="raw_config">
+                <param name="config" type="data" format="json,yaml,txt" label="RFD3 input specification" />
+                <param name="structure" type="data" format="pdb,cif,mmcif" optional="true" label="Optional structure dataset"
+                    help="Use __INPUT_STRUCTURE__ in the JSON/YAML specification to reference this copied Galaxy dataset." />
+            </when>
+            <when value="de_novo">
+                <param name="length" type="text" value="150" label="Designed length or length expression" />
+            </when>
+            <when value="protein_binder">
+                <param name="structure" type="data" format="pdb,cif,mmcif" label="Target structure" />
+                <param name="contig" type="text" label="Contig" help="RFD3 contig expression for the designed chain/region." />
+                <param name="length" type="text" optional="true" label="Optional length expression" />
+                <param name="select_hotspots_json" type="text" optional="true" label="Hotspot atom/region selection JSON" />
+                <param name="infer_ori_strategy" type="select" label="Orientation strategy">
+                    <option value="infer" selected="true">infer</option>
+                    <option value="random">random</option>
+                    <option value="specified">specified</option>
+                </param>
+                <param name="is_non_loopy" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Use non-loopy binder conditioning" />
+            </when>
+            <when value="nucleic_acid_binder">
+                <param name="structure" type="data" format="pdb,cif,mmcif" label="Target protein/nucleic-acid structure" />
+                <param name="contig" type="text" label="Contig" />
+                <param name="length" type="text" label="Designed length expression" />
+                <param name="ori_token" type="text" optional="true" label="Orientation token" />
+                <param name="select_fixed_atoms_json" type="text" optional="true" label="Fixed atom selection JSON" />
+                <param name="select_hbond_donors_json" type="text" optional="true" label="H-bond donor selection JSON" />
+                <param name="select_hbond_acceptors_json" type="text" optional="true" label="H-bond acceptor selection JSON" />
+                <param name="is_non_loopy" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Use non-loopy conditioning" />
+            </when>
+            <when value="small_molecule_binder">
+                <param name="structure" type="data" format="pdb,cif,mmcif" label="Target structure containing ligand" />
+                <param name="ligand" type="text" label="Ligand identifier" />
+                <param name="length" type="text" label="Designed length expression" />
+                <param name="select_fixed_atoms_json" type="text" optional="true" label="Fixed atom selection JSON" />
+                <param name="select_buried_json" type="text" optional="true" label="Buried atom/region selection JSON" />
+                <param name="select_exposed_json" type="text" optional="true" label="Exposed atom/region selection JSON" />
+            </when>
+            <when value="enzyme">
+                <param name="structure" type="data" format="pdb,cif,mmcif" label="Motif or enzyme scaffold structure" />
+                <param name="ligand" type="text" label="Ligand identifier" />
+                <param name="unindex" type="text" label="Unindexed motif/residue expression" />
+                <param name="length" type="text" label="Designed length expression" />
+                <param name="select_fixed_atoms_json" type="text" optional="true" label="Fixed atom selection JSON" />
+                <param name="select_unfixed_sequence" type="text" optional="true" label="Unfixed sequence selection JSON" />
+                <param name="redesign_motif_sidechains" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Redesign motif sidechains" />
+                <param name="partial_t" type="text" optional="true" label="Partial diffusion timestep" />
+            </when>
+        </conditional>
+        <section name="advanced" title="Advanced RFD3 options" expanded="false">
+            <param name="ckpt_path" type="text" optional="true" label="Checkpoint path"
+                help="Leave blank to use the checkpoint configured in the Foundry environment." />
+            <param name="n_batches" type="text" optional="true" label="n_batches override" />
+            <param name="diffusion_batch_size" type="text" optional="true" label="diffusion_batch_size override" />
+            <param name="num_timesteps" type="text" optional="true" label="num_timesteps override" />
+            <param name="step_scale" type="text" optional="true" label="step_scale override" />
+            <param name="gamma_0" type="text" optional="true" label="gamma_0 override" />
+            <param name="low_memory_mode" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Enable low_memory_mode" />
+            <param name="dump_trajectories" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Dump trajectories" />
+            <param name="additional_overrides" type="text" optional="true" label="Additional RFD3 CLI overrides"
+                help="Space-separated Foundry overrides, for example num_timesteps=30 step_scale=1.5." />
+        </section>
+        <param name="rfd3_command" type="hidden" value="" />
+    </inputs>
+    <outputs>
+        <data name="prepared_input" format="json" from_work_dir="rfd3_inputs.json" label="${tool.name} on ${on_string}: prepared input" />
+        <data name="summary_json" format="json" from_work_dir="rfd3_summary.json" label="${tool.name} on ${on_string}: run summary" />
+        <data name="output_archive" format="zip" from_work_dir="rfd3_outputs.zip" label="${tool.name} on ${on_string}: output archive" />
+        <collection name="designed_structures" type="list" label="${tool.name} on ${on_string}: designed structures">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.cif" directory="galaxy_structures" ext="cif" />
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.pdb" directory="galaxy_structures" ext="pdb" />
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="run_name" value="mock_design" />
+            <conditional name="input_source">
+                <param name="mode" value="de_novo" />
+                <param name="length" value="30" />
+            </conditional>
+            <param name="rfd3_command" value="mock-rfd3" />
+            <output name="summary_json">
+                <assert_contents>
+                    <has_text text="&quot;tool&quot;: &quot;RFDiffusion3&quot;" />
+                    <has_text text="&quot;type&quot;: &quot;cif.gz&quot;" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+This wrapper runs the Foundry ``rfd3 design`` command and collects generated
+``CIF``/``PDB`` structures into Galaxy datasets while preserving the complete
+RFD3 output directory as a ZIP archive.
+
+For maximum coverage, use **Raw RFD3 input specification** and provide the same
+JSON/YAML ``inputs`` file you would pass to the official CLI. If that file needs
+to reference a Galaxy-uploaded structure, put ``__INPUT_STRUCTURE__`` in the
+specification and supply the structure dataset in the optional structure field.
+
+The scenario forms cover common documented workflows: de novo length design,
+protein binder design, nucleic-acid binder design, small-molecule binder design,
+and enzyme/motif-conditioned design. Advanced parameters are passed as Foundry
+CLI overrides.
+    ]]></help>
+</tool>

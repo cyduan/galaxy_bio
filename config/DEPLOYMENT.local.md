@@ -139,6 +139,75 @@ argument containing `/`, pin `einops` to a Python-3.7 compatible release:
 
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
+## Foundry RFDiffusion3 and ProteinMPNN
+
+The repository includes Galaxy wrappers for Foundry RFDiffusion3 and
+ProteinMPNN:
+
+- `tools/structure_prediction/rfd3_design/rfd3_design.xml`
+- `tools/structure_prediction/foundry_mpnn/foundry_mpnn.xml`
+
+Both tools are routed to `foundry_local` in `config/job_conf.yml`, which expects:
+
+```text
+/data/conda_envs/foundry/bin/rfd3
+/data/conda_envs/foundry/bin/mpnn
+/data/models/foundry/checkpoints
+```
+
+Recommended install:
+
+```bash
+conda create -p /data/conda_envs/foundry python=3.12 -y
+conda activate /data/conda_envs/foundry
+python -m pip install --upgrade pip
+python -m pip install "rc-foundry[all]"
+foundry install base-models --checkpoint-dir /data/models/foundry/checkpoints
+```
+
+Clone the production branch separately if you want the official tutorial inputs
+and example files:
+
+```bash
+git clone --branch production https://github.com/RosettaCommons/foundry.git /data/tools/Repo/foundry
+```
+
+Environment checks:
+
+```bash
+/data/conda_envs/foundry/bin/python - <<'PY'
+import importlib.util, sys
+print("python:", sys.executable)
+print("rfd3:", importlib.util.find_spec("rfd3"))
+print("mpnn:", importlib.util.find_spec("mpnn"))
+PY
+/data/conda_envs/foundry/bin/rfd3 --help
+/data/conda_envs/foundry/bin/mpnn --help
+```
+
+Minimal RFD3 smoke test after checkpoints are installed:
+
+```bash
+mkdir -p /data/test/rfd3_selftest
+cat > /data/test/rfd3_selftest/input.json <<'EOF'
+{
+  "galaxy_smoke_test": {
+    "length": "30"
+  }
+}
+EOF
+TORCH_HOME=/data/cache/torch \
+FOUNDRY_CHECKPOINT_DIRS=/data/models/foundry/checkpoints \
+/data/conda_envs/foundry/bin/rfd3 design \
+  out_dir=/data/test/rfd3_selftest/out \
+  inputs=/data/test/rfd3_selftest/input.json \
+  n_batches=1 diffusion_batch_size=1 num_timesteps=1
+```
+
+ProteinMPNN should be checked with `mpnn --help` first. Its wrapper exposes a
+CLI argument template because the upstream Foundry README still marks detailed
+command-line and JSON inference documentation as forthcoming.
+
 ## BLAST
 
 The repository now includes a first local BLAST+ integration:
