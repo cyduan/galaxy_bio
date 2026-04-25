@@ -31,18 +31,26 @@ that package into the same ESMFold environment:
 ```
 
 If Galaxy instead reports ``No module named 'torch._six'`` while importing
-DeepSpeed, the ESMFold environment has a version mismatch between DeepSpeed
-and PyTorch. The current OpenFold ``main`` environment pins PyTorch 2.5 and
-``deepspeed==0.14.5``. If you keep that newer OpenFold stack, align the same
-environment accordingly:
+DeepSpeed, the ESMFold environment has drifted away from Meta's archived ESMFold
+stack. The official repository instead recommends either building the provided
+``environment.yml`` or installing the pinned OpenFold commit from the README:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install "deepspeed==0.14.5"
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install \
+  'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
 
-If you do not need DeepSpeed acceleration, removing DeepSpeed from the ESMFold
-environment is also a valid fallback so OpenFold can skip the optional kernel
-path entirely.
+If Galaxy reports missing keys such as
+``trunk.structure_module.ipa.linear_kv_points.linear.*`` or
+``trunk.structure_module.ipa.linear_q_points.linear.*``, the installed OpenFold
+implementation does not match the ESMFold weights. This is commonly caused by a
+newer editable OpenFold checkout shadowing the pinned ESMFold dependency. In
+that case, remove the conflicting OpenFold install and reinstall the pinned
+commit above.
+
+For the most reproducible setup, rebuilding a clean environment from the
+archived Meta ``environment.yml`` is safer than mixing newer PyTorch/OpenFold
+packages into an existing environment.
 
 ## Local verification
 

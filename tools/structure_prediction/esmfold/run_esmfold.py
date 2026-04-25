@@ -166,27 +166,31 @@ def parse_pdb_metrics(path: Path) -> dict:
 
 
 def dependency_error_hint(stderr: str) -> str | None:
+    env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
+    esmfold_python = os.environ.get("ESMFOLD_PYTHON")
+    if not esmfold_python:
+        esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
+
     if "No module named 'modelcif'" in stderr:
-        esmfold_python = os.environ.get("ESMFOLD_PYTHON")
-        if not esmfold_python:
-            env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
-            esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
         return (
             "The ESMFold runtime is missing the Python package 'modelcif'. "
             f"Install it into the ESMFold environment, for example: {esmfold_python} -m pip install modelcif"
         )
     if "No module named 'torch._six'" in stderr:
-        env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold39")
-        esmfold_python = os.environ.get("ESMFOLD_PYTHON")
-        if not esmfold_python:
-            esmfold_python = str(Path(expanduser(f"~/miniconda3/envs/{env_name}/bin/python")))
         return (
             "The ESMFold runtime has an incompatible DeepSpeed/PyTorch combination. "
-            "Your current traceback indicates an older DeepSpeed build that still imports torch._six. "
-            f"If you keep the current OpenFold 2.2 / PyTorch 2 stack, align the environment with: "
-            f"{esmfold_python} -m pip install 'deepspeed==0.14.5'. "
-            "As a quick workaround, removing DeepSpeed from the ESMFold environment can also allow "
-            "OpenFold to skip the optional DeepSpeed kernel path."
+            "For the official ESMFold CLI, prefer rebuilding the environment to match Meta's archived pins "
+            "(environment.yml / README), including the pinned OpenFold commit "
+            "4b41059694619831a7db195b7e0988fc4ff3a307."
+        )
+    if "linear_kv_points.linear" in stderr and "linear_q_points.linear" in stderr and "are missing" in stderr:
+        return (
+            "The ESMFold weights do not match the installed OpenFold implementation. "
+            "This usually happens when a newer OpenFold tree (for example an editable OpenFold 2.x checkout) "
+            "is installed instead of Meta's pinned ESMFold dependency. Rebuild the ESMFold environment with "
+            f"the official pinned OpenFold commit: {esmfold_python} -m pip install "
+            "'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307' "
+            "and remove any conflicting editable openfold installation first."
         )
     return None
 

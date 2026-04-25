@@ -48,14 +48,23 @@ the same environment that provides `esm-fold`, for example:
 ```
 
 If the traceback instead ends with `No module named 'torch._six'`, the current
-DeepSpeed package in the ESMFold environment is too old for your installed
-PyTorch. The current OpenFold main environment uses PyTorch 2.5 together with
-`deepspeed==0.14.5`, so align that environment or remove DeepSpeed entirely if
-you do not need its optional acceleration path:
+DeepSpeed package in the ESMFold environment is mismatched with the rest of the
+stack. For the official ESMFold CLI, prefer Meta's archived environment pins or
+the pinned OpenFold commit from the README instead of mixing in newer OpenFold
+and PyTorch packages:
 
 ```bash
-/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install "deepspeed==0.14.5"
+/home/ubuntu/miniconda3/envs/esmfold39/bin/python -m pip install \
+  'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307'
 ```
+
+If the traceback instead reports missing keys like
+`trunk.structure_module.ipa.linear_kv_points.linear.*` and
+`trunk.structure_module.ipa.linear_q_points.linear.*`, the ESMFold weights do
+not match the installed OpenFold code. This usually means a newer editable
+OpenFold checkout is shadowing the pinned ESMFold dependency. Remove the
+conflicting OpenFold install and rebuild the ESMFold environment against the
+official pinned commit.
 
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
