@@ -193,6 +193,12 @@ def dependency_error_hint(stderr: str) -> str | None:
             "'openfold @ git+https://github.com/aqlaboratory/openfold.git@4b41059694619831a7db195b7e0988fc4ff3a307' "
             "and remove any conflicting editable openfold installation first."
         )
+    if "site-packages/einops/einops.py" in stderr and "SyntaxError: invalid syntax" in stderr:
+        return (
+            "The ESMFold runtime is using Python 3.7 with a newer einops release that requires newer Python syntax. "
+            f"Install a Python-3.7 compatible einops version in the ESMFold environment, for example: "
+            f"{esmfold_python} -m pip install 'einops==0.6.1'"
+        )
     return None
 
 

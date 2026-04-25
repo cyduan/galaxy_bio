@@ -85,6 +85,58 @@ with:
 /data/conda_envs/esmfold_official/bin/python -m pip install /data/tools/sources/openfold-4b41059694619831a7db195b7e0988fc4ff3a307.tar.gz
 ```
 
+If the archive install fails during `import torch` with
+`undefined symbol: iJIT_NotifyEvent`, downgrade the MKL runtime in the ESMFold
+environment and retry:
+
+```bash
+conda install -p /data/conda_envs/esmfold_official --dry-run \
+  --override-channels --no-channel-priority \
+  -c https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge \
+  -c https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch \
+  "mkl=2024.0.0"
+
+conda install -p /data/conda_envs/esmfold_official -y \
+  --override-channels --no-channel-priority \
+  -c https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge \
+  -c https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch \
+  "mkl=2024.0.0"
+/data/conda_envs/esmfold_official/bin/python -c "import torch; print(torch.__version__)"
+```
+
+If the solver still cannot resolve the environment cleanly, keep the existing
+CUDA libraries and only replace the MKL runtime with the exact conda-forge
+package:
+
+```bash
+conda install -p /data/conda_envs/esmfold_official -y --no-deps \
+  https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/linux-64/mkl-2024.0.0-ha957f24_49657.conda
+/data/conda_envs/esmfold_official/bin/python -c "import torch; print(torch.__version__)"
+```
+
+After installing OpenFold, verify that the ESM package includes the official
+`esm-fold` CLI:
+
+```bash
+/data/conda_envs/esmfold_official/bin/python -c "import importlib.util; print(importlib.util.find_spec('esm.scripts.fold'))"
+/data/conda_envs/esmfold_official/bin/esm-fold -h
+```
+
+If `esm.scripts.fold` is missing, reinstall `fair-esm` from the official source
+archive or repository instead of relying on a partial wheel:
+
+```bash
+/data/conda_envs/esmfold_official/bin/python -m pip uninstall -y fair-esm esm
+/data/conda_envs/esmfold_official/bin/python -m pip install /data/tools/sources/esm-main.zip
+```
+
+If `esm-fold` fails while importing `einops` with a `SyntaxError` at a function
+argument containing `/`, pin `einops` to a Python-3.7 compatible release:
+
+```bash
+/data/conda_envs/esmfold_official/bin/python -m pip install "einops==0.6.1"
+```
+
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
 ## BLAST
