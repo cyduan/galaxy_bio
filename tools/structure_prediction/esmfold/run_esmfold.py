@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import uuid
+import zipfile
 from pathlib import Path
 
 
@@ -21,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-fasta", required=True)
     parser.add_argument("--output-pdb", required=True)
     parser.add_argument("--summary-json", required=True)
+    parser.add_argument("--output-archive")
     parser.add_argument("--esmfold-command", default=os.environ.get("ESMFOLD_BINARY", "esm-fold"))
     parser.add_argument("--num-recycles", type=int, default=4)
     parser.add_argument("--max-tokens-per-batch", type=int)
@@ -166,6 +168,18 @@ def parse_pdb_metrics(path: Path) -> dict:
     }
 
 
+def write_archive(archive_path: Path, output_dir: Path, output_pdb: Path, summary_json: Path | None = None) -> None:
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zip_handle:
+        for path in sorted(output_dir.rglob("*")):
+            if path.is_file():
+                zip_handle.write(path, Path("esmfold_raw_output") / path.relative_to(output_dir))
+        if output_pdb.exists():
+            zip_handle.write(output_pdb, Path("galaxy_outputs") / output_pdb.name)
+        if summary_json and summary_json.exists():
+            zip_handle.write(summary_json, Path("galaxy_outputs") / summary_json.name)
+
+
 def dependency_error_hint(stderr: str) -> str | None:
     env_name = os.environ.get("ESMFOLD_ENV_NAME", "esmfold_official")
     esmfold_python = os.environ.get("ESMFOLD_PYTHON")
@@ -207,6 +221,7 @@ def main() -> int:
     input_path = Path(args.input_fasta)
     output_pdb = Path(args.output_pdb)
     summary_json = Path(args.summary_json)
+    output_archive = Path(args.output_archive) if args.output_archive else None
     output_pdb.parent.mkdir(parents=True, exist_ok=True)
     summary_json.parent.mkdir(parents=True, exist_ok=True)
 
@@ -257,22 +272,25 @@ def main() -> int:
 
         pdb_path = find_single_pdb(output_dir)
         shutil.copyfile(pdb_path, output_pdb)
+
+        metrics = parse_pdb_metrics(output_pdb)
+        summary = {
+            "tool": "ESMFold",
+            "input_identifier": identifier,
+            "output_name": output_name,
+            "sequence_length": len(sequence.replace(":", "")),
+            "multimer_chain_count": sequence.count(":") + 1,
+            "num_recycles": args.num_recycles,
+            "execution_mode": "cpu_only" if args.cpu_only else "cpu_offload" if args.cpu_offload else "gpu",
+            "esmfold_command": args.esmfold_command,
+            "output_archive": str(output_archive) if output_archive else None,
+            **metrics,
+        }
+        summary_json.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+        if output_archive:
+            write_archive(output_archive, output_dir, output_pdb, summary_json)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
-
-    metrics = parse_pdb_metrics(output_pdb)
-    summary = {
-        "tool": "ESMFold",
-        "input_identifier": identifier,
-        "output_name": output_name,
-        "sequence_length": len(sequence.replace(":", "")),
-        "multimer_chain_count": sequence.count(":") + 1,
-        "num_recycles": args.num_recycles,
-        "execution_mode": "cpu_only" if args.cpu_only else "cpu_offload" if args.cpu_offload else "gpu",
-        "esmfold_command": args.esmfold_command,
-        **metrics,
-    }
-    summary_json.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     return 0
 
 

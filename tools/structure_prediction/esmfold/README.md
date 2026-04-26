@@ -4,10 +4,12 @@ This directory contains the first Galaxy wrapper for ESMFold in this repository.
 
 ## What it does
 
-- accepts one FASTA record per dataset
+- accepts one FASTA record per dataset with `esmfold.xml`
+- accepts multi-FASTA batch jobs with `esmfold_batch.xml`
 - runs the `esm-fold` CLI
-- writes a `pdb` structure model
-- writes a small `json` summary for downstream workflows
+- writes `pdb` structure models
+- writes small `json` summaries for downstream workflows
+- optionally writes a complete ZIP archive of the raw `esm-fold` output directory
 
 ## Runtime expectation
 
@@ -139,3 +141,27 @@ python tools/structure_prediction/esmfold/run_esmfold.py \
 ```
 
 For a real deployment, keep the tool default at `esm-fold` and make that executable available in the Galaxy job environment, or export `ESMFOLD_BINARY` to point at a custom wrapper binary.
+
+## Single versus batch prediction
+
+The single-sequence tool intentionally keeps the previous behavior: one FASTA
+record in, one PDB model and one JSON summary out. ESMFold generally produces
+one model per input sequence, not a set of ranked alternative models like
+AlphaFold. If `Save complete esm-fold output archive` is enabled, Galaxy also
+returns a ZIP containing the raw `esm-fold` output folder.
+
+Use `ESMFold Batch` for multi-FASTA inputs. It runs `esm-fold` once, then
+organizes outputs into:
+
+- a collection of PDB structures
+- a collection of per-record JSON summaries
+- one combined JSON summary
+- one plain-text run log
+- an optional ZIP archive containing raw and organized outputs
+
+The batch wrapper runs records one at a time. A failed record is written as a
+failed per-record summary and logged, but later records continue. Within one
+active Galaxy job, if a structure and summary already exist for a record, that
+record is skipped. If the whole Galaxy job is killed and resubmitted, Galaxy
+normally starts with a fresh job directory, so cross-job resume requires a
+persistent external working directory rather than the default job sandbox.

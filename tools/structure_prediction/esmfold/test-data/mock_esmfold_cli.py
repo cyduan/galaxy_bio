@@ -6,13 +6,34 @@ import argparse
 from pathlib import Path
 
 
-def read_first_identifier(path: Path) -> str:
+def read_identifiers(path: Path) -> list[str]:
+    identifiers: list[str] = []
     with path.open() as handle:
         for raw_line in handle:
             line = raw_line.strip()
             if line.startswith(">"):
-                return line[1:].strip() or "query"
-    return "query"
+                identifiers.append(line[1:].strip() or f"query_{len(identifiers) + 1}")
+    return identifiers or ["query"]
+
+
+def write_mock_pdb(path: Path, identifier: str) -> None:
+    path.write_text(
+        "\n".join(
+            [
+                "HEADER    MOCK ESMFOLD OUTPUT",
+                f"TITLE     GENERATED FOR {identifier}",
+                "ATOM      1  N   MET A   1      11.104  13.207   9.317  1.00 91.25           N",
+                "ATOM      2  CA  MET A   1      12.560  13.425   9.188  1.00 90.75           C",
+                "ATOM      3  C   MET A   1      13.197  12.140   8.621  1.00 89.50           C",
+                "ATOM      4  N   GLY B   2      14.104  11.907   7.917  1.00 87.25           N",
+                "ATOM      5  CA  GLY B   2      14.560  10.625   7.388  1.00 86.75           C",
+                "TER",
+                "END",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -29,25 +50,8 @@ def main() -> int:
     input_path = Path(args.input)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    identifier = read_first_identifier(input_path)
-    output_path = output_dir / f"{identifier}.pdb"
-    output_path.write_text(
-        "\n".join(
-            [
-                "HEADER    MOCK ESMFOLD OUTPUT",
-                "TITLE     GENERATED FOR LOCAL WRAPPER VERIFICATION",
-                "ATOM      1  N   MET A   1      11.104  13.207   9.317  1.00 91.25           N",
-                "ATOM      2  CA  MET A   1      12.560  13.425   9.188  1.00 90.75           C",
-                "ATOM      3  C   MET A   1      13.197  12.140   8.621  1.00 89.50           C",
-                "ATOM      4  N   GLY B   2      14.104  11.907   7.917  1.00 87.25           N",
-                "ATOM      5  CA  GLY B   2      14.560  10.625   7.388  1.00 86.75           C",
-                "TER",
-                "END",
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
+    for identifier in read_identifiers(input_path):
+        write_mock_pdb(output_dir / f"{identifier}.pdb", identifier)
     return 0
 
 

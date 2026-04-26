@@ -139,6 +139,17 @@ argument containing `/`, pin `einops` to a Python-3.7 compatible release:
 
 If you later move ESMFold into a GPU container, uncomment the `esmfold_gpu` example in `config/job_conf.yml`, set a real image name, and remap the `esmfold` tool to that environment.
 
+The ESMFold single-sequence tool keeps the original output behavior: one input
+FASTA record produces one PDB structure and one JSON summary. Enable `Save
+complete esm-fold output archive` only when you also want the raw `esm-fold`
+output directory as a ZIP. For multi-FASTA jobs, use `ESMFold Batch`; it produces
+a PDB collection, a per-record summary JSON collection, one combined summary, a
+plain-text run log, and an optional complete output archive. Batch records are
+processed one at a time, so a failed sequence is reported in the summaries/log
+and later records continue. Full resume after a killed Galaxy job requires a
+persistent external working directory; the default Galaxy job directory is fresh
+on resubmission.
+
 ## Foundry RFDiffusion3 and ProteinMPNN
 
 The repository includes Galaxy wrappers for Foundry RFDiffusion3 and
@@ -207,6 +218,59 @@ FOUNDRY_CHECKPOINT_DIRS=/data/models/foundry/checkpoints \
 ProteinMPNN should be checked with `mpnn --help` first. Its wrapper exposes a
 CLI argument template because the upstream Foundry README still marks detailed
 command-line and JSON inference documentation as forthcoming.
+
+## FoldX
+
+The repository includes FoldX wrappers for stability and mutation-energy
+calculations:
+
+- `tools/structure_prediction/foldx/foldx_stability.xml`
+- `tools/structure_prediction/foldx/foldx_buildmodel.xml`
+
+FoldX is licensed software. Download the Linux executable from the official
+FoldX Suite site with an authorized account and place it outside the repository,
+for example:
+
+```bash
+mkdir -p /data/tools/foldx
+# Put the authorized FoldX executable at /data/tools/foldx/foldx
+chmod +x /data/tools/foldx/foldx
+```
+
+The Galaxy job destination `foldx_local` in `config/job_conf.yml` expects:
+
+```text
+/data/tools/foldx/foldx
+```
+
+Environment checks:
+
+```bash
+/data/tools/foldx/foldx --help
+/data/tools/foldx/foldx --version
+```
+
+Minimal FoldX checks:
+
+```bash
+mkdir -p /data/test/foldx_selftest
+cp /data/tools/galaxy_bio/tools/structure_prediction/foldx/test-data/foldx_input.pdb /data/test/foldx_selftest/input.pdb
+cd /data/test/foldx_selftest
+/data/tools/foldx/foldx --command=RepairPDB --pdb=input.pdb
+/data/tools/foldx/foldx --command=Stability --pdb=input_Repair.pdb --output-file=stability
+cat > individual_list.txt <<'EOF'
+GA1V;
+EOF
+/data/tools/foldx/foldx --command=BuildModel --pdb=input_Repair.pdb --mutant-file=individual_list.txt --numberOfRuns=5 --output-file=buildmodel
+ls -lh
+```
+
+In Galaxy:
+
+- `FoldX Stability` optionally runs `RepairPDB` and then `Stability`.
+- `FoldX BuildModel` optionally runs `RepairPDB`, accepts typed mutations or an
+  `individual_list.txt`, then returns mutation-energy `.fxout`, mutant
+  structures, logs, summary JSON, and a full ZIP archive.
 
 ## BLAST
 

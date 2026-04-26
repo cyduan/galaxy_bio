@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="esmfold_batch" name="ESMFold Batch" version="0.1.0" profile="24.0">
+    <description>predict structures for multiple FASTA records in one run</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $execution_mode_arg = ""
+#if $execution_mode.mode == "cpu_only":
+    #set $execution_mode_arg = "--cpu-only"
+#elif $execution_mode.mode == "cpu_offload":
+    #set $execution_mode_arg = "--cpu-offload"
+#end if
+#set $max_tokens_arg = ""
+#if $advanced.max_tokens_per_batch.mode == "custom":
+    #set $max_tokens_arg = "--max-tokens-per-batch '%s'" % $advanced.max_tokens_per_batch.value
+#end if
+#set $chunk_size_arg = ""
+#if $advanced.chunk_size.mode == "custom":
+    #set $chunk_size_arg = "--chunk-size '%s'" % $advanced.chunk_size.value
+#end if
+#set $archive_arg = ""
+#if str($save_all_outputs) == "true":
+    #set $archive_arg = "--output-archive 'esmfold_batch_all_outputs.zip'"
+#end if
+#set $esmfold_command_arg = ""
+#if str($esmfold_command) not in ["", "None"]:
+    #set $esmfold_command_arg = "--esmfold-command '%s'" % $esmfold_command
+#end if
+python '$__tool_directory__/run_esmfold_batch.py' --input-fasta '$sequences' --structures-dir 'batch_structures' --summaries-dir 'batch_summaries' --combined-summary-json 'combined_summary.json' --run-log 'run_log.txt' $archive_arg $esmfold_command_arg --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg
+    ]]></command>
+    <inputs>
+        <param name="sequences" type="data" format="fasta" label="Protein sequences (multi-FASTA)" />
+        <param name="num_recycles" type="integer" min="1" value="4" label="Number of recycles" />
+        <conditional name="execution_mode">
+            <param name="mode" type="select" label="Execution mode">
+                <option value="gpu" selected="true">GPU</option>
+                <option value="cpu_offload">GPU with CPU offload</option>
+                <option value="cpu_only">CPU only</option>
+            </param>
+            <when value="gpu" />
+            <when value="cpu_offload" />
+            <when value="cpu_only" />
+        </conditional>
+        <param name="save_all_outputs" type="boolean" truevalue="true" falsevalue="false" checked="false"
+            label="Save complete esm-fold output archive" />
+        <section name="advanced" title="Advanced options" expanded="false">
+            <conditional name="max_tokens_per_batch">
+                <param name="mode" type="select" label="Max tokens per batch">
+                    <option value="default" selected="true">Use esm-fold default</option>
+                    <option value="custom">Set a custom value</option>
+                </param>
+                <when value="default" />
+                <when value="custom">
+                    <param name="value" type="integer" min="1" label="Custom max tokens per batch" />
+                </when>
+            </conditional>
+            <conditional name="chunk_size">
+                <param name="mode" type="select" label="Chunk size">
+                    <option value="default" selected="true">Use esm-fold default</option>
+                    <option value="custom">Set a custom value</option>
+                </param>
+                <when value="default" />
+                <when value="custom">
+                    <param name="value" type="integer" min="1" label="Custom chunk size" />
+                </when>
+            </conditional>
+        </section>
+        <param name="esmfold_command" type="hidden" value="" />
+    </inputs>
+    <outputs>
+        <collection name="structure_models" type="list" label="${tool.name} on ${on_string}: structure models">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.pdb" directory="batch_structures" ext="pdb" />
+        </collection>
+        <collection name="summary_files" type="list" label="${tool.name} on ${on_string}: per-record summaries">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.json" directory="batch_summaries" ext="json" />
+        </collection>
+        <data name="combined_summary_json" format="json" from_work_dir="combined_summary.json" label="${tool.name} on ${on_string}: combined summary" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+        <data name="all_outputs_archive" format="zip" from_work_dir="esmfold_batch_all_outputs.zip" label="${tool.name} on ${on_string}: complete output archive">
+            <filter>save_all_outputs == True</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="sequences" value="esmfold_multi.fasta" />
+            <param name="num_recycles" value="2" />
+            <conditional name="execution_mode">
+                <param name="mode" value="cpu_offload" />
+            </conditional>
+            <param name="esmfold_command" value="mock-esmfold" />
+            <output name="combined_summary_json">
+                <assert_contents>
+                    <has_text text="&quot;tool&quot;: &quot;ESMFold Batch&quot;" />
+                    <has_text text="&quot;record_count&quot;: 2" />
+                    <has_text text="&quot;model_count&quot;: 2" />
+                    <has_text text="&quot;failed_count&quot;: 0" />
+                </assert_contents>
+            </output>
+            <output name="run_log">
+                <assert_contents>
+                    <has_text text="SUCCESS example_target_a" />
+                    <has_text text="SUCCESS example_target_b" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="5">
+            <param name="sequences" value="esmfold_multi.fasta" />
+            <param name="save_all_outputs" value="true" />
+            <param name="esmfold_command" value="mock-esmfold" />
+            <output name="all_outputs_archive" ftype="zip" />
+        </test>
+    </tests>
+    <help><![CDATA[
+ESMFold Batch accepts a multi-FASTA file and runs the official ``esm-fold`` CLI
+once for all records. It organizes outputs for downstream batch processing:
+
+- ``structure models``: a collection of PDB structures
+- ``per-record summaries``: a collection of JSON summary files
+- ``combined summary``: one JSON file listing all records and metrics
+- ``run log``: plain-text status log with START/SUCCESS/FAILED lines
+- optional ``complete output archive``: the raw esm-fold directory plus the
+  organized structures and summaries
+
+Records are run one at a time so a failed sequence is recorded as ``failed`` and
+does not block later sequences. Successful records still produce PDB outputs.
+Within a single running job, existing per-record outputs are skipped if found.
+After a Galaxy job is killed and resubmitted, Galaxy usually starts a fresh job
+working directory, so full cross-job resume depends on an external persistent
+working directory.
+
+If you want Galaxy-level retry and scheduling for each sequence, use the
+single-sequence ESMFold tool with a dataset collection instead. This batch tool
+is better when you want one large job and one organized result folder.
+    ]]></help>
+</tool>

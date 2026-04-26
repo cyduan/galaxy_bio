@@ -8,8 +8,13 @@
   <section id="similarity_search" name="Similarity Search">
     <tool file="structure_prediction/blast_search/blast_search.xml" />
   </section>
+  <section id="protein_stability" name="Protein Stability">
+    <tool file="structure_prediction/foldx/foldx_stability.xml" />
+    <tool file="structure_prediction/foldx/foldx_buildmodel.xml" />
+  </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />
+    <tool file="structure_prediction/esmfold/esmfold_batch.xml" />
     <tool file="structure_prediction/rfd3_design/rfd3_design.xml" />
     <tool file="structure_prediction/foundry_mpnn/foundry_mpnn.xml" />
   </section>

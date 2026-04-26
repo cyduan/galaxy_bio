@@ -24,12 +24,19 @@
 #if str($esmfold_command) not in ["", "None"]:
     #set $esmfold_command_arg = "--esmfold-command '%s'" % $esmfold_command
 #end if
-python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-pdb 'result.pdb' --summary-json 'summary.json' $esmfold_command_arg --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg $output_name_arg
+#set $archive_arg = ""
+#if str($save_all_outputs) == "true":
+    #set $archive_arg = "--output-archive 'esmfold_all_outputs.zip'"
+#end if
+python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-pdb 'result.pdb' --summary-json 'summary.json' $archive_arg $esmfold_command_arg --num-recycles '$num_recycles' $execution_mode_arg $max_tokens_arg $chunk_size_arg $output_name_arg
     ]]></command>
     <inputs>
         <param name="sequence" type="data" format="fasta" label="Protein sequence (single FASTA record)"
             help="Use one protein or one multimer definition per dataset. For batches, map this tool over a collection instead of supplying a multi-record FASTA." />
         <param name="num_recycles" type="integer" min="1" value="4" label="Number of recycles" />
+        <param name="save_all_outputs" type="boolean" truevalue="true" falsevalue="false" checked="false"
+            label="Save complete esm-fold output archive"
+            help="When enabled, Galaxy also returns a ZIP archive containing the raw esm-fold output directory plus the organized PDB and summary." />
         <conditional name="execution_mode">
             <param name="mode" type="select" label="Execution mode">
                 <option value="gpu" selected="true">GPU</option>
@@ -71,6 +78,9 @@ python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-p
     <outputs>
         <data name="pdb_model" format="pdb" from_work_dir="result.pdb" label="${tool.name} on ${on_string}: structure model" />
         <data name="summary_json" format="json" from_work_dir="summary.json" label="${tool.name} on ${on_string}: run summary" />
+        <data name="all_outputs_archive" format="zip" from_work_dir="esmfold_all_outputs.zip" label="${tool.name} on ${on_string}: complete output archive">
+            <filter>save_all_outputs == True</filter>
+        </data>
     </outputs>
     <tests>
         <test expect_num_outputs="2">
@@ -95,15 +105,22 @@ python '$__tool_directory__/run_esmfold.py' --input-fasta '$sequence' --output-p
             <param name="sequence" value="esmfold_multi.fasta" />
             <param name="esmfold_command" value="mock-esmfold" />
         </test>
+        <test expect_num_outputs="3">
+            <param name="sequence" value="esmfold_single.fasta" />
+            <param name="save_all_outputs" value="true" />
+            <param name="esmfold_command" value="mock-esmfold" />
+            <output name="all_outputs_archive" ftype="zip" />
+        </test>
     </tests>
     <help><![CDATA[
 ESMFold predicts a protein structure from a single FASTA record and returns:
 
 - a ``PDB`` structure model
 - a small ``JSON`` summary containing sequence length, atom count, chain ids, and mean B-factor
+- optionally, a ``ZIP`` archive containing the complete raw ``esm-fold`` output directory
 
 The wrapper intentionally accepts **one FASTA record per dataset**. If you need to process many sequences,
-upload them as a collection and map this tool over the collection.
+upload them as a collection and map this tool over the collection, or use the companion **ESMFold Batch** tool.
 
 Admin notes
 ===========

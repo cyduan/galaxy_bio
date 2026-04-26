@@ -1,0 +1,3 @@
+"tool": "ESMFold Batch"
+"record_count": 2
+"model_count": 2

@@ -58,6 +58,12 @@ execution:
         - name: TORCH_HOME
           value: /data/cache/torch
 
+    foldx_local:
+      runner: local
+      env:
+        - name: FOLDX_BINARY
+          value: /data/tools/foldx/foldx
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -120,8 +126,14 @@ execution:
 tools:
 - id: esmfold
   environment: esmfold_local
+- id: esmfold_batch
+  environment: esmfold_local
 - id: blast_search
   environment: blast_local
+- id: foldx_stability
+  environment: foldx_local
+- id: foldx_buildmodel
+  environment: foldx_local
 - id: rfd3_design
   environment: foundry_local
 - id: foundry_mpnn
