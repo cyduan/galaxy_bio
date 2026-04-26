@@ -51,8 +51,9 @@ def resolve_foldx(command: str) -> list[str]:
 
 
 def copy_input_pdb(source: Path, work_dir: Path) -> Path:
-    suffix = "".join(source.suffixes) or ".pdb"
-    target = work_dir / f"{safe_name(source.stem)}{suffix}"
+    # Galaxy stores datasets as .dat files on disk even when the datatype is PDB.
+    # FoldX expects the copied working file to look like a PDB file.
+    target = work_dir / f"{safe_name(source.stem)}.pdb"
     shutil.copyfile(source, target)
     return target
 
@@ -60,13 +61,29 @@ def copy_input_pdb(source: Path, work_dir: Path) -> Path:
 def run_command(command: list[str], cwd: Path, log_lines: list[str]) -> subprocess.CompletedProcess[str]:
     log_lines.append("$ " + " ".join(command))
     if command[0] == "mock-foldx":
-        return run_mock(command, cwd)
+        completed = run_mock(command, cwd)
+        log_lines.append(f"[returncode] {completed.returncode}")
+        if completed.stdout:
+            log_lines.append("[stdout]\n" + completed.stdout.rstrip())
+        if completed.stderr:
+            log_lines.append("[stderr]\n" + completed.stderr.rstrip())
+        return completed
     completed = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
+    log_lines.append(f"[returncode] {completed.returncode}")
     if completed.stdout:
         log_lines.append("[stdout]\n" + completed.stdout.rstrip())
     if completed.stderr:
         log_lines.append("[stderr]\n" + completed.stderr.rstrip())
     return completed
+
+
+def foldx_failure_message(step: str, completed: subprocess.CompletedProcess[str]) -> str:
+    message = [f"FoldX {step} failed with status {completed.returncode}."]
+    if completed.stdout:
+        message.append("FoldX stdout:\n" + completed.stdout.strip())
+    if completed.stderr:
+        message.append("FoldX stderr:\n" + completed.stderr.strip())
+    return "\n\n".join(message)
 
 
 def run_mock(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -187,7 +204,7 @@ def run_repair(args: argparse.Namespace, foldx: list[str], input_pdb: Path, work
     ]
     completed = run_command(command, work_dir, log_lines)
     if completed.returncode != 0:
-        raise RuntimeError(f"FoldX RepairPDB failed with status {completed.returncode}")
+        raise RuntimeError(foldx_failure_message("RepairPDB", completed))
     repaired = find_repaired_pdb(work_dir, input_pdb)
     if repaired is None:
         raise RuntimeError("FoldX RepairPDB completed but no *_Repair.pdb file was found.")
@@ -204,7 +221,7 @@ def run_stability(args: argparse.Namespace, foldx: list[str], pdb: Path, work_di
     ]
     completed = run_command(command, work_dir, log_lines)
     if completed.returncode != 0:
-        raise RuntimeError(f"FoldX Stability failed with status {completed.returncode}")
+        raise RuntimeError(foldx_failure_message("Stability", completed))
     result = first_matching_file(work_dir, ["stability_ST.fxout", "*_ST.fxout", "*.fxout"])
     if result is None:
         raise RuntimeError("FoldX Stability completed but no stability .fxout file was found.")
@@ -225,7 +242,7 @@ def run_buildmodel(
     ]
     completed = run_command(command, work_dir, log_lines)
     if completed.returncode != 0:
-        raise RuntimeError(f"FoldX BuildModel failed with status {completed.returncode}")
+        raise RuntimeError(foldx_failure_message("BuildModel", completed))
     result = first_matching_file(work_dir, ["Dif_*.fxout", "*Dif*.fxout", "Average_*.fxout", "*.fxout"])
     if result is None:
         raise RuntimeError("FoldX BuildModel completed but no .fxout file was found.")
@@ -255,13 +272,13 @@ def main() -> int:
     repaired_pdb_path: str | None = None
 
     try:
+        mutation_file = write_mutation_file(args, work_dir)
         if args.repair:
             active_pdb = run_repair(args, foldx, copied_pdb, work_dir, log_lines)
             repaired_pdb_path = str(active_pdb)
             if args.repaired_pdb:
                 shutil.copyfile(active_pdb, args.repaired_pdb)
 
-        mutation_file = write_mutation_file(args, work_dir)
         if args.mode == "stability":
             result = run_stability(args, foldx, active_pdb, work_dir, log_lines)
             if not args.stability_output:
@@ -311,7 +328,8 @@ def main() -> int:
         log_lines.append("Status: failed")
         log_lines.append(str(exc))
         Path(args.run_log).write_text("\n".join(log_lines) + "\n", encoding="utf-8")
-        raise
+        sys.stderr.write("\n".join(log_lines) + "\n")
+        return 1
     return 0
 
 

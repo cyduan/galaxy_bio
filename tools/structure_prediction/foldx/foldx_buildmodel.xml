@@ -27,7 +27,9 @@ python '$__tool_directory__/run_foldx.py' --mode buildmodel --pdb '$pdb' $repair
             </param>
             <when value="text">
                 <param name="mutations" type="text" label="FoldX mutation list"
-                    help="One mutation set per line, for example GA1V; or GA1V,LB42A;. A trailing semicolon is added if omitted." />
+                    help="One mutation set per line, for example GA1V; or GA1V,LB42A;. A trailing semicolon is added if omitted.">
+                    <validator type="empty_field" message="Enter at least one FoldX mutation, for example GA1V;" />
+                </param>
             </when>
             <when value="file">
                 <param name="mutation_file" type="data" format="txt" label="FoldX individual_list.txt" />
