@@ -206,7 +206,15 @@ def main() -> int:
         if completed.returncode != 0:
             sys.stderr.write(external_output.read_text(encoding="utf-8"))
             return 1
-        external_status = {"returncode": completed.returncode, "command": args.proteinsol_command}
+        external_status = {
+            "returncode": completed.returncode,
+            "command": args.proteinsol_command,
+            "output_files": [
+                str(path.relative_to(external_dir))
+                for path in sorted(external_dir.rglob("*"))
+                if path.is_file()
+            ],
+        }
     else:
         external_output.write_text(
             "Protein-Sol external command was not run. The CSV contains offline sequence features only.\n",
