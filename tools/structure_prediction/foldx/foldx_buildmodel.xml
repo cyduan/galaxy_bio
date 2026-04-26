@@ -43,7 +43,7 @@ python '$__tool_directory__/run_foldx.py' --mode buildmodel --pdb '$pdb' $repair
         <param name="foldx_command" type="hidden" value="" />
     </inputs>
     <outputs>
-        <data name="ddg_fxout" format="txt" from_work_dir="ddg.fxout" label="${tool.name} on ${on_string}: mutation energy output" />
+        <data name="ddg_fxout" format="csv" from_work_dir="ddg.fxout" label="${tool.name} on ${on_string}: mutation energy output" />
         <data name="summary_json" format="json" from_work_dir="summary.json" label="${tool.name} on ${on_string}: run summary" />
         <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
         <data name="archive" format="zip" from_work_dir="foldx_outputs.zip" label="${tool.name} on ${on_string}: complete FoldX outputs" />

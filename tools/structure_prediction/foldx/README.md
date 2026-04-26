@@ -2,8 +2,10 @@
 
 This directory contains Galaxy wrappers for FoldX:
 
-- `FoldX Stability`: optional `RepairPDB`, then `Stability`
-- `FoldX BuildModel`: optional `RepairPDB`, then mutation `BuildModel`
+- `FoldX Stability`: optional `RepairPDB`, then `Stability`, with the primary
+  output converted to CSV using descriptive FoldX energy-term headers
+- `FoldX BuildModel`: optional `RepairPDB`, then mutation `BuildModel`, with the
+  primary energy table converted to CSV
 
 FoldX is licensed software and must be downloaded from the FoldX Suite site by
 an authorized user. Do not commit the FoldX executable or license materials into

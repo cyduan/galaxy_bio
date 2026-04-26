@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import re
@@ -12,6 +13,34 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+
+
+STABILITY_COLUMNS = [
+    "Pdb",
+    "Total Energy",
+    "Backbone Hbond",
+    "Sidechain Hbond",
+    "Van der Waals",
+    "Electrostatics",
+    "Solvation Polar",
+    "Solvation Hydrophobic",
+    "Van der Waals clashes",
+    "Entropy Sidechain",
+    "Entropy Mainchain",
+    "Sloop Entropy",
+    "Mloop Entropy",
+    "Cis Bond",
+    "Torsional Clash",
+    "Backbone Clash",
+    "Helix Dipole",
+    "Water Bridge",
+    "Disulfide",
+    "Electrostatic Kon",
+    "Partial Covalent Bonds",
+    "Energy Ionisation",
+    "Entropy Complex",
+    "Number of Residues",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -152,6 +181,71 @@ def first_matching_file(work_dir: Path, patterns: list[str]) -> Path | None:
     return matches[0] if matches else None
 
 
+def non_comment_rows(path: Path) -> list[list[str]]:
+    rows: list[list[str]] = []
+    with path.open(encoding="utf-8", errors="replace") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            rows.append(re.split(r"\s+", line))
+    return rows
+
+
+def convert_stability_to_csv(source: Path, destination: str) -> None:
+    rows = non_comment_rows(source)
+    if not rows:
+        raise RuntimeError(f"FoldX stability output is empty: {source}")
+    data_rows = [row for row in rows if is_stability_data_row(row)]
+    if not data_rows:
+        data_rows = rows
+    with Path(destination).open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(STABILITY_COLUMNS)
+        for row in data_rows:
+            if len(row) == len(STABILITY_COLUMNS):
+                writer.writerow(row)
+            elif len(row) == len(STABILITY_COLUMNS) - 1:
+                writer.writerow([source.name, *row])
+            else:
+                padded = row[: len(STABILITY_COLUMNS)]
+                padded.extend([""] * (len(STABILITY_COLUMNS) - len(padded)))
+                writer.writerow(padded)
+
+
+def is_stability_data_row(row: list[str]) -> bool:
+    return len(row) >= 2 and all(looks_numeric(value) for value in row[1:])
+
+
+def convert_foldx_table_to_csv(source: Path, destination: str) -> None:
+    rows = non_comment_rows(source)
+    with Path(destination).open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        if not rows:
+            writer.writerow(["FoldX output"])
+            return
+        first_row = rows[0]
+        has_header = any(not looks_numeric(value) for value in first_row[1:])
+        if has_header:
+            writer.writerow(first_row)
+            writer.writerows(rows[1:])
+        else:
+            max_columns = max(len(row) for row in rows)
+            writer.writerow([f"column_{index}" for index in range(1, max_columns + 1)])
+            for row in rows:
+                padded = row[:max_columns]
+                padded.extend([""] * (max_columns - len(padded)))
+                writer.writerow(padded)
+
+
+def looks_numeric(value: str) -> bool:
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
 def collect_mutant_structures(work_dir: Path, structures_dir: Path, excluded_stems: set[str]) -> list[str]:
     structures_dir.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
@@ -283,7 +377,7 @@ def main() -> int:
             result = run_stability(args, foldx, active_pdb, work_dir, log_lines)
             if not args.stability_output:
                 raise ValueError("--stability-output is required in stability mode.")
-            shutil.copyfile(result, args.stability_output)
+            convert_stability_to_csv(result, args.stability_output)
             primary_output = args.stability_output
             mutant_structures: list[str] = []
         else:
@@ -292,7 +386,7 @@ def main() -> int:
             result = run_buildmodel(args, foldx, active_pdb, mutation_file, work_dir, log_lines)
             if not args.ddg_output:
                 raise ValueError("--ddg-output is required in buildmodel mode.")
-            shutil.copyfile(result, args.ddg_output)
+            convert_foldx_table_to_csv(result, args.ddg_output)
             primary_output = args.ddg_output
             mutant_structures = (
                 collect_mutant_structures(work_dir, Path(args.mutant_structures_dir), {copied_pdb.stem, active_pdb.stem})

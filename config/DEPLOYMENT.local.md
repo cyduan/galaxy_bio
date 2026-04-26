@@ -267,9 +267,10 @@ ls -lh
 
 In Galaxy:
 
-- `FoldX Stability` optionally runs `RepairPDB` and then `Stability`.
+- `FoldX Stability` optionally runs `RepairPDB` and then `Stability`; the main
+  output is converted to CSV with descriptive FoldX energy-term headers.
 - `FoldX BuildModel` optionally runs `RepairPDB`, accepts typed mutations or an
-  `individual_list.txt`, then returns mutation-energy `.fxout`, mutant
+  `individual_list.txt`, then returns mutation-energy CSV, mutant
   structures, logs, summary JSON, and a full ZIP archive.
 
 ## BLAST
