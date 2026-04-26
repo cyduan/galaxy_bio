@@ -22,7 +22,8 @@ def stop_err(message: str) -> NoReturn:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create FASTA/CSV/XLSX files from manually entered sequences.")
-    parser.add_argument("--entries-json", required=True)
+    parser.add_argument("--entries-json")
+    parser.add_argument("--input-text")
     parser.add_argument("--output-format", required=True, choices=["fasta", "csv", "xlsx"])
     parser.add_argument("--output", required=True)
     return parser.parse_args()
@@ -51,6 +52,80 @@ def load_entries(path: Path) -> list[tuple[str, str]]:
         raw_name = str(entry.get("name", "")).strip()
         name = raw_name or str(auto_name_counter)
         auto_name_counter += 1
+        records.append((name, sequence))
+    return records
+
+
+def load_entries_from_text(path: Path) -> list[tuple[str, str]]:
+    text = path.read_text(encoding="utf-8-sig")
+    records = parse_fasta_text(text)
+    if not records:
+        records = parse_delimited_or_plain_text(text)
+    if not records:
+        stop_err("No sequence records were found in the input text dataset.")
+    return records
+
+
+def parse_fasta_text(text: str) -> list[tuple[str, str]]:
+    records: list[tuple[str, str]] = []
+    current_name: str | None = None
+    sequence_lines: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_name, sequence_lines
+        if current_name is None:
+            return
+        sequence = normalize_sequence("".join(sequence_lines))
+        if not sequence:
+            stop_err(f"FASTA record '{current_name}' does not contain a sequence.")
+        records.append((current_name, sequence))
+
+    saw_header = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith(">"):
+            saw_header = True
+            flush()
+            current_name = line[1:].strip() or str(len(records) + 1)
+            sequence_lines = []
+        else:
+            if current_name is not None:
+                sequence_lines.append(line)
+    flush()
+    return records if saw_header else []
+
+
+def parse_delimited_or_plain_text(text: str) -> list[tuple[str, str]]:
+    records: list[tuple[str, str]] = []
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line_number == 1 and line.lower().replace(" ", "") in {"name,sequence", "name\tsequence", "sequence"}:
+            continue
+        name = ""
+        sequence = ""
+        if "\t" in line:
+            parts = [part.strip() for part in line.split("\t")]
+            if len(parts) >= 2:
+                name, sequence = parts[0], parts[1]
+            else:
+                sequence = parts[0]
+        elif "," in line:
+            parts = [part.strip() for part in line.split(",", 1)]
+            if len(parts) == 2 and parts[1]:
+                name, sequence = parts
+            else:
+                sequence = parts[0]
+        else:
+            sequence = line
+        sequence = normalize_sequence(sequence)
+        if not sequence:
+            continue
+        if not name:
+            name = str(len(records) + 1)
         records.append((name, sequence))
     return records
 
@@ -177,7 +252,12 @@ def write_xlsx(records: list[tuple[str, str]], output_path: Path) -> None:
 def main() -> int:
     args = parse_args()
     output_path = Path(args.output)
-    records = load_entries(Path(args.entries_json))
+    if args.input_text:
+        records = load_entries_from_text(Path(args.input_text))
+    elif args.entries_json:
+        records = load_entries(Path(args.entries_json))
+    else:
+        stop_err("Either --entries-json or --input-text is required.")
     if args.output_format == "fasta":
         write_fasta(records, output_path)
     elif args.output_format == "csv":

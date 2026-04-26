@@ -1,0 +1,51 @@
+<tool id="text_sequences_to_file" name="Text Dataset to FASTA/CSV/XLSX" version="0.1.0" profile="24.0">
+  <description>convert a workflow-friendly text dataset of sequences into FASTA, CSV, or XLSX</description>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/manual_sequences_to_file.py' --input-text '$input_text' --output-format '$output_format' --output '$output'
+  ]]></command>
+  <inputs>
+    <param name="input_text" type="data" format="txt,tabular,csv,fasta" label="Sequence text dataset"
+      help="Accepted formats: FASTA; name&lt;TAB&gt;sequence; name,sequence; sequence-only lines. Sequence-only records are named 1, 2, 3..." />
+    <param name="output_format" type="select" label="Output format">
+      <option value="fasta" selected="true">FASTA</option>
+      <option value="csv">CSV</option>
+      <option value="xlsx">XLSX</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output" format="fasta" label="${tool.name}: ${output_format}">
+      <change_format>
+        <when input="output_format" value="csv" format="csv" />
+        <when input="output_format" value="xlsx" format="xlsx" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_text" value="text_sequences.tsv" ftype="tabular" />
+      <param name="output_format" value="fasta" />
+      <output name="output" file="manual_sequences_expected.fasta" />
+    </test>
+    <test>
+      <param name="input_text" value="text_sequences_plain.txt" ftype="txt" />
+      <param name="output_format" value="csv" />
+      <output name="output" file="text_sequences_plain_expected.csv" ftype="csv" />
+    </test>
+  </tests>
+  <help><![CDATA[
+This tool is the workflow-friendly companion to **Manual Sequences to
+FASTA/CSV/XLSX**. Instead of storing sequence entries as tool parameters, it
+uses a Galaxy history dataset as input, so it can naturally be the first
+conversion step inside a workflow.
+
+Supported input shapes:
+
+- FASTA records
+- ``name<TAB>sequence``
+- ``name,sequence``
+- one sequence per line, with names auto-generated as ``1``, ``2``, ``3`` ...
+
+Use Galaxy's upload/paste interface to create the text dataset, then feed it
+into this tool in workflows.
+  ]]></help>
+</tool>
