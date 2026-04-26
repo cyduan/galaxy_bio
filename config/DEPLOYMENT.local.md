@@ -273,6 +273,63 @@ In Galaxy:
   `individual_list.txt`, then returns mutation-energy CSV, mutant
   structures, logs, summary JSON, and a full ZIP archive.
 
+## ProtParam and Protein-Sol
+
+The repository includes sequence-level protein analysis tools:
+
+- `tools/structure_prediction/protein_analysis/protparam.xml`
+- `tools/structure_prediction/protein_analysis/protein_sol.xml`
+
+### ProtParam
+
+ProtParam uses Biopython's `ProteinAnalysis` implementation. Check that
+Biopython is available in the Galaxy Python environment:
+
+```bash
+/data/tools/galaxy_bio/.venv/bin/python - <<'PY'
+from Bio.SeqUtils.ProtParam import ProteinAnalysis
+print(ProteinAnalysis("MKTAYIAK").molecular_weight())
+PY
+```
+
+If that fails:
+
+```bash
+/data/tools/galaxy_bio/.venv/bin/python -m pip install biopython
+```
+
+### Protein-Sol
+
+The University of Manchester Protein-Sol service provides downloadable software
+from:
+
+```text
+https://protein-sol.manchester.ac.uk/software
+```
+
+Because the local package invocation can vary, this Galaxy wrapper supports a
+command template through `PROTEINSOL_COMMAND` in `config/job_conf.yml`.
+
+Expected launcher shape:
+
+```bash
+/data/tools/protein-sol/run_protein_sol.sh {input_fasta} {output_dir}
+```
+
+Check the launcher:
+
+```bash
+mkdir -p /data/test/protein_sol_selftest
+cp /data/tools/galaxy_bio/tools/structure_prediction/protein_analysis/test-data/protein_analysis_input.fasta /data/test/protein_sol_selftest/input.fasta
+/data/tools/protein-sol/run_protein_sol.sh /data/test/protein_sol_selftest/input.fasta /data/test/protein_sol_selftest/out
+ls -lh /data/test/protein_sol_selftest/out
+```
+
+The Galaxy `Protein-Sol` tool also has a default offline sequence-feature mode.
+That mode is useful for screening and workflow wiring, but it is not the
+official QuerySol score. Use external mode with the configured local package for
+official Protein-Sol predictions.
+
 ## BLAST
 
 The repository now includes a first local BLAST+ integration:

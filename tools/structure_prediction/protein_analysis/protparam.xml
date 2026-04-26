@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="protparam" name="ProtParam" version="0.1.0" profile="24.0">
+    <description>compute physicochemical protein sequence properties</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $ignore_invalid_arg = ""
+#if str($ignore_invalid) == "true":
+    #set $ignore_invalid_arg = "--ignore-invalid"
+#end if
+python '$__tool_directory__/run_protparam.py' --input-fasta '$sequences' --output-csv 'protparam.csv' --summary-json 'summary.json' $ignore_invalid_arg
+    ]]></command>
+    <inputs>
+        <param name="sequences" type="data" format="fasta" label="Protein sequences" />
+        <param name="ignore_invalid" type="boolean" truevalue="true" falsevalue="false" checked="false"
+            label="Ignore non-canonical residues" />
+    </inputs>
+    <outputs>
+        <data name="protparam_csv" format="csv" from_work_dir="protparam.csv" label="${tool.name} on ${on_string}: properties" />
+        <data name="summary_json" format="json" from_work_dir="summary.json" label="${tool.name} on ${on_string}: run summary" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="sequences" value="protein_analysis_input.fasta" />
+            <output name="protparam_csv">
+                <assert_contents>
+                    <has_text text="molecular_weight" />
+                    <has_text text="isoelectric_point" />
+                    <has_text text="example_protein" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+ProtParam computes common protein sequence properties using Biopython's
+``ProteinAnalysis`` implementation, including molecular weight, theoretical pI,
+GRAVY, aromaticity, instability index, charge at pH 7, extinction coefficients,
+secondary-structure fractions, and amino-acid composition.
+    ]]></help>
+</tool>

@@ -64,6 +64,15 @@ execution:
         - name: FOLDX_BINARY
           value: /data/tools/foldx/foldx
 
+    protein_analysis_local:
+      runner: local
+      env:
+        # Optional: configure this after installing the official local
+        # Protein-Sol package. The template may use {input_fasta} and
+        # {output_dir} placeholders.
+        - name: PROTEINSOL_COMMAND
+          value: /data/tools/protein-sol/run_protein_sol.sh {input_fasta} {output_dir}
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -130,6 +139,10 @@ tools:
   environment: esmfold_local
 - id: blast_search
   environment: blast_local
+- id: protparam
+  environment: protein_analysis_local
+- id: protein_sol
+  environment: protein_analysis_local
 - id: foldx_stability
   environment: foldx_local
 - id: foldx_buildmodel

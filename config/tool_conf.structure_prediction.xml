@@ -8,6 +8,10 @@
   <section id="similarity_search" name="Similarity Search">
     <tool file="structure_prediction/blast_search/blast_search.xml" />
   </section>
+  <section id="protein_analysis" name="Protein Analysis">
+    <tool file="structure_prediction/protein_analysis/protparam.xml" />
+    <tool file="structure_prediction/protein_analysis/protein_sol.xml" />
+  </section>
   <section id="protein_stability" name="Protein Stability">
     <tool file="structure_prediction/foldx/foldx_stability.xml" />
     <tool file="structure_prediction/foldx/foldx_buildmodel.xml" />

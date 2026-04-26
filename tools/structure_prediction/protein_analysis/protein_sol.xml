@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="protein_sol" name="Protein-Sol" version="0.1.0" profile="24.0">
+    <description>summarize protein solubility-related sequence features or run local Protein-Sol</description>
+    <command detect_errors="exit_code"><![CDATA[
+#set $proteinsol_command_arg = ""
+#if str($proteinsol_command) not in ["", "None"]:
+    #set $proteinsol_command_arg = "--proteinsol-command '%s'" % $proteinsol_command
+#end if
+python '$__tool_directory__/run_protein_sol.py' --input-fasta '$sequences' --output-csv 'protein_sol.csv' --summary-json 'summary.json' --external-output 'external_output.txt' --archive 'protein_sol_outputs.zip' --mode '$mode' $proteinsol_command_arg
+    ]]></command>
+    <inputs>
+        <param name="sequences" type="data" format="fasta" label="Protein sequences" />
+        <param name="mode" type="select" label="Mode">
+            <option value="features" selected="true">Offline sequence feature summary</option>
+            <option value="external">Run configured local Protein-Sol command</option>
+        </param>
+        <param name="proteinsol_command" type="hidden" value="" />
+    </inputs>
+    <outputs>
+        <data name="protein_sol_csv" format="csv" from_work_dir="protein_sol.csv" label="${tool.name} on ${on_string}: solubility features" />
+        <data name="summary_json" format="json" from_work_dir="summary.json" label="${tool.name} on ${on_string}: run summary" />
+        <data name="external_output" format="txt" from_work_dir="external_output.txt" label="${tool.name} on ${on_string}: external command output" />
+        <data name="archive" format="zip" from_work_dir="protein_sol_outputs.zip" label="${tool.name} on ${on_string}: complete outputs" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="sequences" value="protein_analysis_input.fasta" />
+            <output name="protein_sol_csv">
+                <assert_contents>
+                    <has_text text="protein_sol_proxy_score" />
+                    <has_text text="example_protein" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+Protein-Sol estimates solubility from sequence features. The default mode is an
+offline feature summary intended for screening and workflow integration; it is
+not the official QuerySol score. Configure ``PROTEINSOL_COMMAND`` and use
+external mode when an official local Protein-Sol package is installed.
+
+The external command template can use ``{input_fasta}`` and ``{output_dir}``
+placeholders.
+    ]]></help>
+</tool>
