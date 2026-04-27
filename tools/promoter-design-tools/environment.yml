@@ -1,0 +1,16 @@
+name: promoter-design-tools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - biopython
+  - pandas
+  - numpy
+  - matplotlib
+  - scipy
+  - pytest
+  - planemo
+  # Optional for promoter_motif_scanner mode=fimo:
+  # - meme
+

@@ -1,0 +1,75 @@
+<tool id="promoter_variant_ranker" name="Promoter Variant Ranker" version="0.1.0" profile="24.0">
+  <description>merge conservation, strength, and mutation data into ranked promoter variants</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">pandas</requirement>
+    <requirement type="package">numpy</requirement>
+    <requirement type="package">matplotlib</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+#set $keep_core_arg = "--keep-core-motif" if $keep_core_motif else ""
+python '$__tool_directory__/promoter_variant_ranker.py'
+  --wt-conservation '$wt_conservation'
+  --mutant-conservation '$mutant_conservation'
+  --wt-strength '$wt_strength'
+  --mutant-strength '$mutant_strength'
+  --mutations '$mutations'
+  --output-tsv 'ranked_promoter_variants.tsv'
+  --summary-html 'summary.html'
+  --strength-distribution-png 'strength_distribution.png'
+  --conservation-vs-strength-png 'conservation_vs_strength.png'
+  --log 'run_log.txt'
+  --rank-by '$rank_by'
+  --min-conservation-score '$min_conservation_score'
+  --max-conservation-score '$max_conservation_score'
+  --min-fold-change '$min_fold_change'
+  --max-fold-change '$max_fold_change'
+  $keep_core_arg
+  ]]></command>
+  <inputs>
+    <param name="wt_conservation" type="data" format="tabular" label="WT conservation TSV" />
+    <param name="mutant_conservation" type="data" format="tabular" label="Mutant conservation TSV" />
+    <param name="wt_strength" type="data" format="tabular" label="WT strength TSV" />
+    <param name="mutant_strength" type="data" format="tabular" label="Mutant strength TSV" />
+    <param name="mutations" type="data" format="tabular" label="Mutations TSV" />
+    <param name="rank_by" type="select" label="Rank by">
+      <option value="predicted_strength" selected="true">Predicted strength</option>
+      <option value="fold_change">Fold-change vs parent</option>
+      <option value="conservation_score">Conservation score</option>
+      <option value="custom">Custom composite score</option>
+    </param>
+    <param name="min_conservation_score" type="text" value="" label="Minimum mutant conservation score" />
+    <param name="max_conservation_score" type="text" value="" label="Maximum mutant conservation score" />
+    <param name="min_fold_change" type="text" value="" label="Minimum fold-change" />
+    <param name="max_fold_change" type="text" value="" label="Maximum fold-change" />
+    <param name="keep_core_motif" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Filter out variants mutating -35 or -10 core motifs" />
+  </inputs>
+  <outputs>
+    <data name="ranked_tsv" format="tabular" from_work_dir="ranked_promoter_variants.tsv" label="${tool.name} on ${on_string}: ranked variants" />
+    <data name="summary_html" format="html" from_work_dir="summary.html" label="${tool.name} on ${on_string}: summary" />
+    <data name="strength_distribution_png" format="png" from_work_dir="strength_distribution.png" label="${tool.name} on ${on_string}: strength distribution" />
+    <data name="conservation_vs_strength_png" format="png" from_work_dir="conservation_vs_strength.png" label="${tool.name} on ${on_string}: conservation vs strength" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="5">
+      <param name="wt_conservation" value="wt_conservation.tsv" />
+      <param name="mutant_conservation" value="mutant_conservation.tsv" />
+      <param name="wt_strength" value="wt_strength.tsv" />
+      <param name="mutant_strength" value="mutant_strength.tsv" />
+      <param name="mutations" value="mutations.tsv" />
+      <output name="ranked_tsv">
+        <assert_contents>
+          <has_text text="fold_change_vs_parent" />
+          <has_text text="promoter_A_mut000001" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Merge parent and mutant conservation scores, strength predictions, and mutation
+events. Produces a ranked TSV, an HTML summary, and two PNG visualizations.
+  ]]></help>
+  <citations />
+</tool>
+

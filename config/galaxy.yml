@@ -15,6 +15,7 @@ galaxy:
     - ../lib/galaxy/config/sample/tool_conf.xml.sample
     - tool_conf.interactivetools.xml
     - tool_conf.structure_prediction.xml
+    - tool_conf.promoter_design.xml
 
   # Do not let Galaxy try to download and bootstrap its own Conda copy during
   # startup. This repository relies on the existing Python/Conda installation

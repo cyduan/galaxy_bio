@@ -155,8 +155,8 @@ on resubmission.
 The repository includes Galaxy wrappers for Foundry RFDiffusion3 and
 ProteinMPNN:
 
-- `tools/structure_prediction/rfd3_design/rfd3_design.xml`
-- `tools/structure_prediction/foundry_mpnn/foundry_mpnn.xml`
+- `tools/protein_design/rfd3_design/rfd3_design.xml`
+- `tools/protein_design/foundry_mpnn/foundry_mpnn.xml`
 
 Both tools are routed to `foundry_local` in `config/job_conf.yml`, which expects:
 
@@ -224,8 +224,8 @@ command-line and JSON inference documentation as forthcoming.
 The repository includes FoldX wrappers for stability and mutation-energy
 calculations:
 
-- `tools/structure_prediction/foldx/foldx_stability.xml`
-- `tools/structure_prediction/foldx/foldx_buildmodel.xml`
+- `tools/protein_stability/foldx/foldx_stability.xml`
+- `tools/protein_stability/foldx/foldx_buildmodel.xml`
 
 FoldX is licensed software. Download the Linux executable from the official
 FoldX Suite site with an authorized account and place it outside the repository,
@@ -254,7 +254,7 @@ Minimal FoldX checks:
 
 ```bash
 mkdir -p /data/test/foldx_selftest
-cp /data/tools/galaxy_bio/tools/structure_prediction/foldx/test-data/foldx_input.pdb /data/test/foldx_selftest/input.pdb
+cp /data/tools/galaxy_bio/tools/protein_stability/foldx/test-data/foldx_input.pdb /data/test/foldx_selftest/input.pdb
 cd /data/test/foldx_selftest
 /data/tools/foldx/foldx --command=RepairPDB --pdb=input.pdb
 /data/tools/foldx/foldx --command=Stability --pdb=input_Repair.pdb --output-file=stability
@@ -277,8 +277,8 @@ In Galaxy:
 
 The repository includes sequence-level protein analysis tools:
 
-- `tools/structure_prediction/protein_analysis/protparam.xml`
-- `tools/structure_prediction/protein_analysis/protein_sol.xml`
+- `tools/protein_analysis/protparam.xml`
+- `tools/protein_analysis/protein_sol.xml`
 
 ### ProtParam
 
@@ -320,7 +320,7 @@ Check the launcher:
 
 ```bash
 mkdir -p /data/test/protein_sol_selftest
-cp /data/tools/galaxy_bio/tools/structure_prediction/protein_analysis/test-data/protein_analysis_input.fasta /data/test/protein_sol_selftest/input.fasta
+cp /data/tools/galaxy_bio/tools/protein_analysis/test-data/protein_analysis_input.fasta /data/test/protein_sol_selftest/input.fasta
 /data/tools/protein-sol/run_protein_sol.sh /data/test/protein_sol_selftest/input.fasta /data/test/protein_sol_selftest/out
 ls -lh /data/test/protein_sol_selftest/out
 ```
@@ -334,8 +334,8 @@ official Protein-Sol predictions.
 
 The repository now includes a first local BLAST+ integration:
 
-- `tools/structure_prediction/blast_search/blast_search.xml`
-- `tools/structure_prediction/blast_search/blast_search.py`
+- `tools/similarity_search/blast_search/blast_search.xml`
+- `tools/similarity_search/blast_search/blast_search.py`
 
 It currently exposes:
 

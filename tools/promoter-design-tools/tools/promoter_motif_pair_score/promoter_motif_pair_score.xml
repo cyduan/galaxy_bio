@@ -1,0 +1,60 @@
+<tool id="promoter_motif_pair_score" name="Promoter Motif Pair Score" version="0.1.0" profile="24.0">
+  <description>pair -35 and -10 hits and score motif conservation</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">biopython</requirement>
+    <requirement type="package">pandas</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+#set $strict_arg = "--strict" if $strict else ""
+python '$__tool_directory__/promoter_motif_pair_score.py'
+  --motif-hits '$motif_hits'
+  --promoters-fasta '$promoters_fasta'
+  --output-tsv 'promoter_conservation.tsv'
+  --log 'run_log.txt'
+  --minus35-motif-name '$minus35_motif_name'
+  --minus10-motif-name '$minus10_motif_name'
+  --min-spacer '$min_spacer'
+  --max-spacer '$max_spacer'
+  --optimal-spacer '$optimal_spacer'
+  --weight-minus35 '$weight_minus35'
+  --weight-minus10 '$weight_minus10'
+  --weight-spacer '$weight_spacer'
+  $strict_arg
+  ]]></command>
+  <inputs>
+    <param name="motif_hits" type="data" format="tabular" label="Motif hits TSV" />
+    <param name="promoters_fasta" type="data" format="fasta" label="Normalized promoter FASTA" />
+    <param name="minus35_motif_name" type="text" value="minus35" label="-35 motif name" />
+    <param name="minus10_motif_name" type="text" value="minus10" label="-10 motif name" />
+    <param name="min_spacer" type="integer" value="16" label="Minimum spacer length" />
+    <param name="max_spacer" type="integer" value="18" label="Maximum spacer length" />
+    <param name="optimal_spacer" type="integer" value="17" label="Optimal spacer length" />
+    <param name="weight_minus35" type="float" value="0.4" label="-35 score weight" />
+    <param name="weight_minus10" type="float" value="0.4" label="-10 score weight" />
+    <param name="weight_spacer" type="float" value="0.2" label="Spacer score weight" />
+    <param name="strict" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Drop pairs outside spacer range" />
+  </inputs>
+  <outputs>
+    <data name="conservation_tsv" format="tabular" from_work_dir="promoter_conservation.tsv" label="${tool.name} on ${on_string}: conservation scores" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="2">
+      <param name="motif_hits" value="motif_hits.tsv" />
+      <param name="promoters_fasta" value="example_promoters.fasta" />
+      <output name="conservation_tsv">
+        <assert_contents>
+          <has_text text="conservation_score" />
+          <has_text text="promoter_A" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Find the best -35/-10 pair per promoter and calculate a conservation score from
+the two motif scores plus spacer quality.
+  ]]></help>
+  <citations />
+</tool>
+

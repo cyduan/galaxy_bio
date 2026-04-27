@@ -1,0 +1,6 @@
+sequence_id	motif_name	start	end	strand	matched_sequence	raw_score	normalized_score	p_value	q_value	source
+promoter_A	minus35	20	25	+	TTGACA	6	1.0	NA	NA	simple
+promoter_A	minus10	43	48	+	TATAAT	6	1.0	NA	NA	simple
+promoter_B	minus35	20	25	+	TTGAAA	5	0.833333	NA	NA	simple
+promoter_B	minus10	43	48	+	TAGAAT	5	0.833333	NA	NA	simple
+

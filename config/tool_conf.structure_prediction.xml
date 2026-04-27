@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <toolbox monitor="true">
   <section id="sequence_preparation" name="Sequence Preparation">
-    <tool file="structure_prediction/table_to_fasta/table_to_fasta.xml" />
-    <tool file="structure_prediction/manual_sequences_to_file/manual_sequences_to_file.xml" />
-    <tool file="structure_prediction/manual_sequences_to_file/text_sequences_to_file.xml" />
-    <tool file="structure_prediction/fasta_to_table/fasta_to_table.xml" />
+    <tool file="sequence_preparation/table_to_fasta/table_to_fasta.xml" />
+    <tool file="sequence_preparation/manual_sequences_to_file/manual_sequences_to_file.xml" />
+    <tool file="sequence_preparation/manual_sequences_to_file/text_sequences_to_file.xml" />
+    <tool file="sequence_preparation/fasta_to_table/fasta_to_table.xml" />
   </section>
   <section id="similarity_search" name="Similarity Search">
-    <tool file="structure_prediction/blast_search/blast_search.xml" />
+    <tool file="similarity_search/blast_search/blast_search.xml" />
   </section>
   <section id="protein_analysis" name="Protein Analysis">
-    <tool file="structure_prediction/protein_analysis/protparam.xml" />
-    <tool file="structure_prediction/protein_analysis/protein_sol.xml" />
+    <tool file="protein_analysis/protparam.xml" />
+    <tool file="protein_analysis/protein_sol.xml" />
   </section>
   <section id="protein_stability" name="Protein Stability">
-    <tool file="structure_prediction/foldx/foldx_stability.xml" />
-    <tool file="structure_prediction/foldx/foldx_buildmodel.xml" />
+    <tool file="protein_stability/foldx/foldx_stability.xml" />
+    <tool file="protein_stability/foldx/foldx_buildmodel.xml" />
   </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />
     <tool file="structure_prediction/esmfold/esmfold_batch.xml" />
-    <tool file="structure_prediction/rfd3_design/rfd3_design.xml" />
-    <tool file="structure_prediction/foundry_mpnn/foundry_mpnn.xml" />
+  </section>
+  <section id="protein_design" name="Protein Design">
+    <tool file="protein_design/rfd3_design/rfd3_design.xml" />
+    <tool file="protein_design/foundry_mpnn/foundry_mpnn.xml" />
   </section>
 </toolbox>

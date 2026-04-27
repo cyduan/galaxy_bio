@@ -1,0 +1,139 @@
+{
+  "a_galaxy_workflow": "true",
+  "format-version": "0.1",
+  "name": "Promoter conservation, mutagenesis, and strength ranking",
+  "annotation": "Normalize promoter windows, score sigma70 -35/-10 motifs, generate mutants, rescore mutants, predict relative strength, and rank variants.",
+  "tags": ["promoter", "sigma70", "mutagenesis"],
+  "steps": {
+    "0": {
+      "id": 0,
+      "type": "data_input",
+      "label": "Input promoter FASTA",
+      "name": "Input Dataset",
+      "position": {"left": 0, "top": 0},
+      "tool_state": "{\"name\":\"Input promoter FASTA\"}",
+      "input_connections": {},
+      "outputs": [{"name": "output", "type": "fasta"}]
+    },
+    "1": {
+      "id": 1,
+      "type": "tool",
+      "tool_id": "promoter_window_normalizer",
+      "tool_version": "0.1.0",
+      "name": "Promoter Window Normalizer",
+      "position": {"left": 260, "top": 0},
+      "tool_state": "{\"target_length\":\"81\",\"tss_offset\":\"60\",\"padding_base\":\"N\"}",
+      "input_connections": {"input_fasta": {"id": 0, "output_name": "output"}},
+      "outputs": [{"name": "normalized_fasta", "type": "fasta"}, {"name": "normalization_report", "type": "tabular"}]
+    },
+    "2": {
+      "id": 2,
+      "type": "tool",
+      "tool_id": "promoter_motif_scanner",
+      "tool_version": "0.1.0",
+      "name": "Promoter Motif Scanner WT",
+      "position": {"left": 520, "top": 0},
+      "tool_state": "{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"fimo_binary\":\"fimo\",\"scan_reverse_complement\":\"false\"}",
+      "input_connections": {"input_fasta": {"id": 1, "output_name": "normalized_fasta"}},
+      "outputs": [{"name": "motif_hits", "type": "tabular"}]
+    },
+    "3": {
+      "id": 3,
+      "type": "tool",
+      "tool_id": "promoter_motif_pair_score",
+      "tool_version": "0.1.0",
+      "name": "Promoter Motif Pair Score WT",
+      "position": {"left": 780, "top": 0},
+      "tool_state": "{\"minus35_motif_name\":\"minus35\",\"minus10_motif_name\":\"minus10\",\"min_spacer\":\"16\",\"max_spacer\":\"18\",\"optimal_spacer\":\"17\",\"weight_minus35\":\"0.4\",\"weight_minus10\":\"0.4\",\"weight_spacer\":\"0.2\",\"strict\":\"false\"}",
+      "input_connections": {
+        "motif_hits": {"id": 2, "output_name": "motif_hits"},
+        "promoters_fasta": {"id": 1, "output_name": "normalized_fasta"}
+      },
+      "outputs": [{"name": "conservation_tsv", "type": "tabular"}]
+    },
+    "4": {
+      "id": 4,
+      "type": "tool",
+      "tool_id": "promoter_random_mutagenesis",
+      "tool_version": "0.1.0",
+      "name": "Promoter Random Mutagenesis",
+      "position": {"left": 1040, "top": 0},
+      "tool_state": "{\"mutants_per_sequence\":\"20\",\"mutation_mode\":\"snv\",\"mutation_count_mode\":\"fixed\",\"mutation_count\":\"1\",\"mutation_rate\":\"0.01\",\"region_mode\":\"full\",\"keep_length\":\"true\",\"allow_n\":\"false\",\"avoid_stop_codons\":\"false\",\"seed\":\"42\"}",
+      "input_connections": {
+        "input_fasta": {"id": 1, "output_name": "normalized_fasta"},
+        "conservation_tsv": {"id": 3, "output_name": "conservation_tsv"}
+      },
+      "outputs": [{"name": "mutants_fasta", "type": "fasta"}, {"name": "mutations_tsv", "type": "tabular"}]
+    },
+    "5": {
+      "id": 5,
+      "type": "tool",
+      "tool_id": "promoter_motif_scanner",
+      "tool_version": "0.1.0",
+      "name": "Promoter Motif Scanner Mutants",
+      "position": {"left": 1300, "top": 0},
+      "tool_state": "{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"fimo_binary\":\"fimo\",\"scan_reverse_complement\":\"false\"}",
+      "input_connections": {"input_fasta": {"id": 4, "output_name": "mutants_fasta"}},
+      "outputs": [{"name": "motif_hits", "type": "tabular"}]
+    },
+    "6": {
+      "id": 6,
+      "type": "tool",
+      "tool_id": "promoter_motif_pair_score",
+      "tool_version": "0.1.0",
+      "name": "Promoter Motif Pair Score Mutants",
+      "position": {"left": 1560, "top": 0},
+      "tool_state": "{\"minus35_motif_name\":\"minus35\",\"minus10_motif_name\":\"minus10\",\"min_spacer\":\"16\",\"max_spacer\":\"18\",\"optimal_spacer\":\"17\",\"weight_minus35\":\"0.4\",\"weight_minus10\":\"0.4\",\"weight_spacer\":\"0.2\",\"strict\":\"false\"}",
+      "input_connections": {
+        "motif_hits": {"id": 5, "output_name": "motif_hits"},
+        "promoters_fasta": {"id": 4, "output_name": "mutants_fasta"}
+      },
+      "outputs": [{"name": "conservation_tsv", "type": "tabular"}]
+    },
+    "7": {
+      "id": 7,
+      "type": "tool",
+      "tool_id": "promoter_strength_predictor",
+      "tool_version": "0.1.0",
+      "name": "Promoter Strength Predictor WT",
+      "position": {"left": 780, "top": 260},
+      "tool_state": "{\"backend\":\"heuristic\",\"organism\":\"Escherichia_coli\",\"tss_offset\":\"60\",\"threads\":\"1\"}",
+      "input_connections": {"input_fasta": {"id": 1, "output_name": "normalized_fasta"}},
+      "outputs": [{"name": "strength_tsv", "type": "tabular"}]
+    },
+    "8": {
+      "id": 8,
+      "type": "tool",
+      "tool_id": "promoter_strength_predictor",
+      "tool_version": "0.1.0",
+      "name": "Promoter Strength Predictor Mutants",
+      "position": {"left": 1560, "top": 260},
+      "tool_state": "{\"backend\":\"heuristic\",\"organism\":\"Escherichia_coli\",\"tss_offset\":\"60\",\"threads\":\"1\"}",
+      "input_connections": {"input_fasta": {"id": 4, "output_name": "mutants_fasta"}},
+      "outputs": [{"name": "strength_tsv", "type": "tabular"}]
+    },
+    "9": {
+      "id": 9,
+      "type": "tool",
+      "tool_id": "promoter_variant_ranker",
+      "tool_version": "0.1.0",
+      "name": "Promoter Variant Ranker",
+      "position": {"left": 1820, "top": 120},
+      "tool_state": "{\"rank_by\":\"predicted_strength\",\"min_conservation_score\":\"\",\"max_conservation_score\":\"\",\"min_fold_change\":\"\",\"max_fold_change\":\"\",\"keep_core_motif\":\"false\"}",
+      "input_connections": {
+        "wt_conservation": {"id": 3, "output_name": "conservation_tsv"},
+        "mutant_conservation": {"id": 6, "output_name": "conservation_tsv"},
+        "wt_strength": {"id": 7, "output_name": "strength_tsv"},
+        "mutant_strength": {"id": 8, "output_name": "strength_tsv"},
+        "mutations": {"id": 4, "output_name": "mutations_tsv"}
+      },
+      "outputs": [
+        {"name": "ranked_tsv", "type": "tabular"},
+        {"name": "summary_html", "type": "html"},
+        {"name": "strength_distribution_png", "type": "png"},
+        {"name": "conservation_vs_strength_png", "type": "png"}
+      ]
+    }
+  }
+}
+

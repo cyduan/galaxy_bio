@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promoter-design-tools"
+version = "0.1.0"
+description = "Galaxy tools for sigma70 promoter normalization, motif scoring, mutagenesis, strength prediction, and ranking."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "biopython",
+  "pandas",
+  "numpy",
+  "matplotlib",
+  "scipy",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "planemo"]
+
+[tool.setuptools.packages.find]
+include = ["promoter_design_tools*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -179,7 +179,7 @@ def main() -> int:
     summary_json = Path(args.summary_json)
     external_output = Path(args.external_output)
     archive = Path(args.archive)
-    external_dir = Path.cwd() / "protein_sol_external_output"
+    external_dir = archive.parent / "protein_sol_external_output"
     external_dir.mkdir(parents=True, exist_ok=True)
 
     records = read_fasta(input_fasta)

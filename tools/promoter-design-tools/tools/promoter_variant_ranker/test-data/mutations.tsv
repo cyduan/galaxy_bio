@@ -1,0 +1,4 @@
+mutant_id	parent_id	mutation_index	mutation_type	position_1based	ref	alt	region	seed
+promoter_A_mut000001	promoter_A	1	snv	60	C	A	non_core	42
+promoter_A_mut000002	promoter_A	1	snv	44	A	G	minus10	42
+

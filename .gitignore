@@ -78,6 +78,7 @@ config/*
 !config/job_conf.yml
 !config/tool_conf.interactivetools.xml
 !config/tool_conf.structure_prediction.xml
+!config/tool_conf.promoter_design.xml
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache
@@ -198,3 +199,5 @@ involucro
 .DS_Store
 *.rej
 *~
+promoter_strength_*/
+protein_sol_external_output/

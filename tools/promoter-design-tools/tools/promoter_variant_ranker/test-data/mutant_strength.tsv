@@ -1,0 +1,4 @@
+sequence_id	predicted_strength	log10_strength	backend	model_version	warning
+promoter_A_mut000001	100.0	2.000000	heuristic	heuristic_sigma70_v0.1	relative_score_not_absolute_transcription_rate
+promoter_A_mut000002	60.0	1.778151	heuristic	heuristic_sigma70_v0.1	relative_score_not_absolute_transcription_rate
+

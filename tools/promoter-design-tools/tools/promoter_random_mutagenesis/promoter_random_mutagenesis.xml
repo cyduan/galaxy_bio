@@ -1,0 +1,90 @@
+<tool id="promoter_random_mutagenesis" name="Promoter Random Mutagenesis" version="0.1.0" profile="24.0">
+  <description>generate reproducible promoter mutant libraries</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">biopython</requirement>
+    <requirement type="package">pandas</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+#set $conservation_arg = "--conservation-tsv '%s'" % $conservation_tsv if str($conservation_tsv) not in ["", "None"] else ""
+#set $keep_length_arg = "--keep-length" if $keep_length else "--no-keep-length"
+#set $allow_n_arg = "--allow-n" if $allow_n else ""
+#set $avoid_stop_arg = "--avoid-stop-codons" if $avoid_stop_codons else ""
+#set $custom_start_arg = "--custom-start '%s'" % $custom_start if str($custom_start) not in ["", "None"] else ""
+#set $custom_end_arg = "--custom-end '%s'" % $custom_end if str($custom_end) not in ["", "None"] else ""
+python '$__tool_directory__/promoter_random_mutagenesis.py'
+  --input-fasta '$input_fasta'
+  $conservation_arg
+  --output-fasta 'mutants.fasta'
+  --mutations-tsv 'mutations.tsv'
+  --log 'run_log.txt'
+  --mutants-per-sequence '$mutants_per_sequence'
+  --mutation-mode '$mutation_mode'
+  --mutation-count-mode '$mutation_count_mode'
+  --mutation-count '$mutation_count'
+  --mutation-rate '$mutation_rate'
+  --region-mode '$region_mode'
+  $custom_start_arg
+  $custom_end_arg
+  $keep_length_arg
+  $allow_n_arg
+  $avoid_stop_arg
+  --seed '$seed'
+  ]]></command>
+  <inputs>
+    <param name="input_fasta" type="data" format="fasta" label="Normalized promoter FASTA" />
+    <param name="conservation_tsv" type="data" format="tabular" optional="true" label="Optional conservation TSV" />
+    <param name="mutants_per_sequence" type="integer" value="10" min="1" label="Mutants per sequence" />
+    <param name="mutation_mode" type="select" label="Mutation mode">
+      <option value="snv" selected="true">SNV</option>
+      <option value="insertion">Insertion</option>
+      <option value="deletion">Deletion</option>
+      <option value="mixed">Mixed</option>
+    </param>
+    <param name="mutation_count_mode" type="select" label="Mutation count mode">
+      <option value="fixed" selected="true">Fixed</option>
+      <option value="rate">Rate</option>
+    </param>
+    <param name="mutation_count" type="integer" value="1" min="0" label="Mutation count" />
+    <param name="mutation_rate" type="float" value="0.01" min="0" label="Mutation rate" />
+    <param name="region_mode" type="select" label="Mutation region">
+      <option value="full" selected="true">Full promoter</option>
+      <option value="minus35">-35 motif</option>
+      <option value="minus10">-10 motif</option>
+      <option value="spacer">Spacer</option>
+      <option value="non_core">Non-core</option>
+      <option value="custom">Custom interval</option>
+    </param>
+    <param name="custom_start" type="integer" optional="true" label="Custom start, 1-based" />
+    <param name="custom_end" type="integer" optional="true" label="Custom end, 1-based" />
+    <param name="keep_length" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Keep promoter length" />
+    <param name="allow_n" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Allow mutation at N positions" />
+    <param name="avoid_stop_codons" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Avoid stop codons, reserved for CDS use" />
+    <param name="seed" type="integer" value="1" label="Random seed" />
+  </inputs>
+  <outputs>
+    <data name="mutants_fasta" format="fasta" from_work_dir="mutants.fasta" label="${tool.name} on ${on_string}: mutants" />
+    <data name="mutations_tsv" format="tabular" from_work_dir="mutations.tsv" label="${tool.name} on ${on_string}: mutations" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="3">
+      <param name="input_fasta" value="example_promoters.fasta" />
+      <param name="conservation_tsv" value="promoter_conservation.tsv" />
+      <param name="mutants_per_sequence" value="2" />
+      <param name="seed" value="42" />
+      <output name="mutations_tsv">
+        <assert_contents>
+          <has_text text="mutant_id" />
+          <has_text text="promoter_A_mut000001" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Generate random promoter libraries with reproducible seeds. Region-aware modes
+use the conservation TSV produced by Promoter Motif Pair Score.
+  ]]></help>
+  <citations />
+</tool>
+

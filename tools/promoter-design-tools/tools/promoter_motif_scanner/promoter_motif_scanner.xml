@@ -1,0 +1,62 @@
+<tool id="promoter_motif_scanner" name="Promoter Motif Scanner" version="0.1.0" profile="24.0">
+  <description>scan for -35 and -10 sigma70 motif candidates</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">biopython</requirement>
+    <requirement type="package">pandas</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+#set $reverse_arg = "--scan-reverse-complement" if $scan_reverse_complement else ""
+#set $minus35_meme_arg = "--minus35-meme '%s'" % $minus35_meme if str($minus35_meme) not in ["", "None"] else ""
+#set $minus10_meme_arg = "--minus10-meme '%s'" % $minus10_meme if str($minus10_meme) not in ["", "None"] else ""
+#set $meme_file_arg = "--meme-file '%s'" % $meme_file if str($meme_file) not in ["", "None"] else ""
+python '$__tool_directory__/promoter_motif_scanner.py'
+  --input-fasta '$input_fasta'
+  --output-tsv 'motif_hits.tsv'
+  --log 'run_log.txt'
+  --mode '$mode'
+  --minus35-consensus '$minus35_consensus'
+  --minus10-consensus '$minus10_consensus'
+  --fimo-binary '$fimo_binary'
+  $minus35_meme_arg
+  $minus10_meme_arg
+  $meme_file_arg
+  $reverse_arg
+  ]]></command>
+  <inputs>
+    <param name="input_fasta" type="data" format="fasta" label="Promoter FASTA" />
+    <param name="mode" type="select" label="Scanner mode">
+      <option value="simple" selected="true">Simple consensus/PWM scanner</option>
+      <option value="fimo">FIMO from MEME Suite</option>
+    </param>
+    <param name="minus35_consensus" type="text" value="TTGACA" label="-35 consensus" />
+    <param name="minus10_consensus" type="text" value="TATAAT" label="-10 consensus" />
+    <param name="minus35_meme" type="data" format="txt" optional="true" label="Optional -35 MEME PWM" />
+    <param name="minus10_meme" type="data" format="txt" optional="true" label="Optional -10 MEME PWM" />
+    <param name="meme_file" type="data" format="txt" optional="true" label="Combined MEME motif file for FIMO mode" />
+    <param name="fimo_binary" type="text" value="fimo" label="FIMO executable" />
+    <param name="scan_reverse_complement" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Scan reverse complement too" />
+  </inputs>
+  <outputs>
+    <data name="motif_hits" format="tabular" from_work_dir="motif_hits.tsv" label="${tool.name} on ${on_string}: motif hits" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="2">
+      <param name="input_fasta" value="example_promoters.fasta" />
+      <param name="mode" value="simple" />
+      <output name="motif_hits">
+        <assert_contents>
+          <has_text text="minus35" />
+          <has_text text="minus10" />
+          <has_text text="TTGACA" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Scan promoter sequences for -35 and -10 candidates. Simple mode uses consensus
+matching or MEME PWM files. FIMO mode requires MEME Suite to be installed.
+  ]]></help>
+  <citations />
+</tool>

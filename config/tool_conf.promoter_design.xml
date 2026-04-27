@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<toolbox monitor="true">
+  <section id="promoter_design_tools" name="Promoter Design Tools">
+    <tool file="promoter-design-tools/tools/promoter_window_normalizer/promoter_window_normalizer.xml" />
+    <tool file="promoter-design-tools/tools/promoter_motif_scanner/promoter_motif_scanner.xml" />
+    <tool file="promoter-design-tools/tools/promoter_motif_pair_score/promoter_motif_pair_score.xml" />
+    <tool file="promoter-design-tools/tools/promoter_random_mutagenesis/promoter_random_mutagenesis.xml" />
+    <tool file="promoter-design-tools/tools/promoter_strength_predictor/promoter_strength_predictor.xml" />
+    <tool file="promoter-design-tools/tools/promoter_variant_ranker/promoter_variant_ranker.xml" />
+  </section>
+</toolbox>

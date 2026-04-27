@@ -47,7 +47,7 @@ Check the launcher:
 
 ```bash
 mkdir -p /data/test/protein_sol_selftest
-cp /data/tools/galaxy_bio/tools/structure_prediction/protein_analysis/test-data/protein_analysis_input.fasta /data/test/protein_sol_selftest/input.fasta
+cp /data/tools/galaxy_bio/tools/protein_analysis/test-data/protein_analysis_input.fasta /data/test/protein_sol_selftest/input.fasta
 /data/tools/protein-sol/run_protein_sol.sh /data/test/protein_sol_selftest/input.fasta /data/test/protein_sol_selftest/out
 ls -lh /data/test/protein_sol_selftest/out
 ```

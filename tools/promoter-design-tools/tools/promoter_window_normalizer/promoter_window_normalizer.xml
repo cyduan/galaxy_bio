@@ -1,0 +1,58 @@
+<tool id="promoter_window_normalizer" name="Promoter Window Normalizer" version="0.1.0" profile="24.0">
+  <description>standardize promoter FASTA windows around the TSS</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">biopython</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/promoter_window_normalizer.py'
+  --input-fasta '$input_fasta'
+  --output-fasta 'normalized_promoters.fasta'
+  --report-tsv 'normalization_report.tsv'
+  --log 'run_log.txt'
+  --target-length '$target_length'
+  --tss-offset '$tss_offset'
+  --padding-base '$padding_base'
+  ]]></command>
+  <inputs>
+    <param name="input_fasta" type="data" format="fasta" label="Promoter FASTA" />
+    <param name="target_length" type="integer" value="81" min="1" label="Target promoter window length" />
+    <param name="tss_offset" type="integer" value="60" min="0" label="TSS offset in the window" help="Default 60 means the 61st base is +1." />
+    <param name="padding_base" type="select" label="Padding/replacement base">
+      <option value="N" selected="true">N</option>
+      <option value="A">A</option>
+      <option value="C">C</option>
+      <option value="G">G</option>
+      <option value="T">T</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="normalized_fasta" format="fasta" from_work_dir="normalized_promoters.fasta" label="${tool.name} on ${on_string}: normalized promoters" />
+    <data name="normalization_report" format="tabular" from_work_dir="normalization_report.tsv" label="${tool.name} on ${on_string}: normalization report" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="3">
+      <param name="input_fasta" value="example_promoters.fasta" />
+      <param name="target_length" value="81" />
+      <output name="normalized_fasta">
+        <assert_contents>
+          <has_text text="promoter_A" />
+          <has_text text="TTGACA" />
+        </assert_contents>
+      </output>
+      <output name="normalization_report">
+        <assert_contents>
+          <has_text text="sequence_id" />
+          <has_text text="normalized_length" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+Normalize promoter windows to a fixed length. The default assumes an E. coli
+style input window from -60 to +20, where the +1 TSS is base 61.
+  ]]></help>
+  <citations />
+</tool>
+

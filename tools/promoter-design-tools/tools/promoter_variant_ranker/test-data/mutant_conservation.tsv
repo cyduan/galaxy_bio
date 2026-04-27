@@ -1,0 +1,4 @@
+sequence_id	minus35_seq	minus35_start	minus35_end	minus35_score	minus10_seq	minus10_start	minus10_end	minus10_score	spacer_len	spacer_score	conservation_score	status
+promoter_A_mut000001	TTGACA	20	25	1.000000	TATAAT	43	48	1.000000	17	1.000000	1.000000	ok
+promoter_A_mut000002	TTGACA	20	25	1.000000	TAGAAT	43	48	0.833333	17	1.000000	0.933333	ok
+

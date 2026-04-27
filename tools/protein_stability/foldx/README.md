@@ -30,7 +30,7 @@ Minimal CLI checks:
 
 ```bash
 mkdir -p /data/test/foldx_selftest
-cp /data/tools/galaxy_bio/tools/structure_prediction/foldx/test-data/foldx_input.pdb /data/test/foldx_selftest/input.pdb
+cp /data/tools/galaxy_bio/tools/protein_stability/foldx/test-data/foldx_input.pdb /data/test/foldx_selftest/input.pdb
 cd /data/test/foldx_selftest
 /data/tools/foldx/foldx --command=RepairPDB --pdb=input.pdb
 /data/tools/foldx/foldx --command=Stability --pdb=input_Repair.pdb --output-file=stability

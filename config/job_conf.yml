@@ -151,3 +151,15 @@ tools:
   environment: foundry_local
 - id: foundry_mpnn
   environment: foundry_local
+- id: promoter_window_normalizer
+  environment: local
+- id: promoter_motif_scanner
+  environment: local
+- id: promoter_motif_pair_score
+  environment: local
+- id: promoter_random_mutagenesis
+  environment: local
+- id: promoter_strength_predictor
+  environment: local
+- id: promoter_variant_ranker
+  environment: local
