@@ -11,8 +11,8 @@
 #set $allow_n_arg = "--allow-n" if str($allow_n) == "true" else ""
 #set $avoid_stop_arg = "--avoid-stop-codons" if str($avoid_stop_codons) == "true" else ""
 #set $custom_region_args = ""
-#if str($region.region_mode) == "custom":
-  #set $custom_region_args = "--custom-start '%s' --custom-end '%s'" % ($region.custom_start, $region.custom_end)
+#if str($region_mode) == "custom":
+  #set $custom_region_args = "--custom-start '%s' --custom-end '%s'" % ($custom_start, $custom_end)
 #end if
 \${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_random_mutagenesis.py'
   --input-fasta '$input_fasta'
@@ -25,7 +25,7 @@
   --mutation-count-mode '$mutation_count_mode'
   --mutation-count '$mutation_count'
   --mutation-rate '$mutation_rate'
-  --region-mode '$region.region_mode'
+  --region-mode '$region_mode'
   $custom_region_args
   $keep_length_arg
   $allow_n_arg
@@ -48,25 +48,16 @@
     </param>
     <param name="mutation_count" type="integer" value="1" min="0" label="Mutation count" />
     <param name="mutation_rate" type="float" value="0.01" min="0" label="Mutation rate" />
-    <conditional name="region">
-      <param name="region_mode" type="select" label="Mutation region">
-        <option value="full" selected="true">Full promoter</option>
-        <option value="minus35">-35 motif</option>
-        <option value="minus10">-10 motif</option>
-        <option value="spacer">Spacer</option>
-        <option value="non_core">Non-core</option>
-        <option value="custom">Custom interval</option>
-      </param>
-      <when value="full" />
-      <when value="minus35" />
-      <when value="minus10" />
-      <when value="spacer" />
-      <when value="non_core" />
-      <when value="custom">
-        <param name="custom_start" type="integer" value="1" min="1" label="Custom start, 1-based" />
-        <param name="custom_end" type="integer" value="81" min="1" label="Custom end, 1-based" />
-      </when>
-    </conditional>
+    <param name="region_mode" type="select" label="Mutation region">
+      <option value="full" selected="true">Full promoter</option>
+      <option value="minus35">-35 motif</option>
+      <option value="minus10">-10 motif</option>
+      <option value="spacer">Spacer</option>
+      <option value="non_core">Non-core</option>
+      <option value="custom">Custom interval</option>
+    </param>
+    <param name="custom_start" type="integer" value="1" min="1" label="Custom start, 1-based" help="Only used when Mutation region is Custom interval." />
+    <param name="custom_end" type="integer" value="81" min="1" label="Custom end, 1-based" help="Only used when Mutation region is Custom interval." />
     <param name="keep_length" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Keep promoter length" />
     <param name="allow_n" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Allow mutation at N positions" />
     <param name="avoid_stop_codons" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Avoid stop codons, reserved for CDS use" />
@@ -143,7 +134,7 @@
   - Custom interval：用户自定义 1-based 区间。
 
 **Custom start / Custom end**
-  仅在 Custom interval 模式下出现，表示自定义突变区域的 1-based 起止坐标。
+  仅在 Mutation region 选择 Custom interval 时使用，表示自定义突变区域的 1-based 起止坐标。其他区域模式下会忽略这两个值。
 
 **Keep promoter length**
   是否保持 promoter 长度不变。默认开启。开启时 insertion/deletion 不允许执行，mixed 模式会退化为 SNV。
