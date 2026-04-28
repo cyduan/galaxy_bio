@@ -30,10 +30,10 @@
       "id": 2,
       "type": "tool",
       "tool_id": "promoter_motif_scanner",
-      "tool_version": "0.1.0",
+      "tool_version": "0.1.1",
       "name": "Promoter Motif Scanner WT",
       "position": {"left": 520, "top": 0},
-      "tool_state": "{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"fimo_binary\":\"fimo\",\"scan_reverse_complement\":\"false\"}",
+      "tool_state": "{\"scan_mode\":{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"minus35_pwm\":{\"use\":\"no\"},\"minus10_pwm\":{\"use\":\"no\"}},\"scan_reverse_complement\":\"false\"}",
       "input_connections": {"input_fasta": {"id": 1, "output_name": "normalized_fasta"}},
       "outputs": [{"name": "motif_hits", "type": "tabular"}]
     },
@@ -55,13 +55,12 @@
       "id": 4,
       "type": "tool",
       "tool_id": "promoter_random_mutagenesis",
-      "tool_version": "0.1.0",
+      "tool_version": "0.1.1",
       "name": "Promoter Random Mutagenesis",
       "position": {"left": 1040, "top": 0},
-      "tool_state": "{\"mutants_per_sequence\":\"20\",\"mutation_mode\":\"snv\",\"mutation_count_mode\":\"fixed\",\"mutation_count\":\"1\",\"mutation_rate\":\"0.01\",\"region_mode\":\"full\",\"keep_length\":\"true\",\"allow_n\":\"false\",\"avoid_stop_codons\":\"false\",\"seed\":\"42\"}",
+      "tool_state": "{\"mutants_per_sequence\":\"20\",\"mutation_mode\":\"snv\",\"mutation_count_mode\":\"fixed\",\"mutation_count\":\"1\",\"mutation_rate\":\"0.01\",\"mutation_region\":{\"region_mode\":\"full\"},\"keep_length\":\"true\",\"allow_n\":\"false\",\"avoid_stop_codons\":\"false\",\"seed\":\"42\"}",
       "input_connections": {
-        "input_fasta": {"id": 1, "output_name": "normalized_fasta"},
-        "conservation_tsv": {"id": 3, "output_name": "conservation_tsv"}
+        "input_fasta": {"id": 1, "output_name": "normalized_fasta"}
       },
       "outputs": [{"name": "mutants_fasta", "type": "fasta"}, {"name": "mutations_tsv", "type": "tabular"}]
     },
@@ -69,10 +68,10 @@
       "id": 5,
       "type": "tool",
       "tool_id": "promoter_motif_scanner",
-      "tool_version": "0.1.0",
+      "tool_version": "0.1.1",
       "name": "Promoter Motif Scanner Mutants",
       "position": {"left": 1300, "top": 0},
-      "tool_state": "{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"fimo_binary\":\"fimo\",\"scan_reverse_complement\":\"false\"}",
+      "tool_state": "{\"scan_mode\":{\"mode\":\"simple\",\"minus35_consensus\":\"TTGACA\",\"minus10_consensus\":\"TATAAT\",\"minus35_pwm\":{\"use\":\"no\"},\"minus10_pwm\":{\"use\":\"no\"}},\"scan_reverse_complement\":\"false\"}",
       "input_connections": {"input_fasta": {"id": 4, "output_name": "mutants_fasta"}},
       "outputs": [{"name": "motif_hits", "type": "tabular"}]
     },
@@ -94,7 +93,7 @@
       "id": 7,
       "type": "tool",
       "tool_id": "promoter_strength_predictor",
-      "tool_version": "0.1.0",
+      "tool_version": "0.1.1",
       "name": "Promoter Strength Predictor WT",
       "position": {"left": 780, "top": 260},
       "tool_state": "{\"backend\":\"heuristic\",\"organism\":\"Escherichia_coli\",\"tss_offset\":\"60\",\"threads\":\"1\"}",
@@ -105,7 +104,7 @@
       "id": 8,
       "type": "tool",
       "tool_id": "promoter_strength_predictor",
-      "tool_version": "0.1.0",
+      "tool_version": "0.1.1",
       "name": "Promoter Strength Predictor Mutants",
       "position": {"left": 1560, "top": 260},
       "tool_state": "{\"backend\":\"heuristic\",\"organism\":\"Escherichia_coli\",\"tss_offset\":\"60\",\"threads\":\"1\"}",
@@ -136,4 +135,3 @@
     }
   }
 }
-

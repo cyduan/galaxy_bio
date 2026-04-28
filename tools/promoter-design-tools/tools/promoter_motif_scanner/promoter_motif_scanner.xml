@@ -1,4 +1,5 @@
-<tool id="promoter_motif_scanner" name="Promoter Motif Scanner" version="0.1.0" profile="24.0">
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="promoter_motif_scanner" name="Promoter Motif Scanner" version="0.1.1" profile="24.0">
   <description>scan for -35 and -10 sigma70 motif candidates</description>
   <requirements>
     <requirement type="package">python</requirement>
@@ -6,44 +7,67 @@
     <requirement type="package">pandas</requirement>
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
-#set $reverse_arg = "--scan-reverse-complement" if str($scan_reverse_complement) == "true" else ""
-#set $simple_args = ""
-#set $fimo_args = ""
-#if str($mode) == "simple":
-  #set $simple_args = "--minus35-consensus '%s' --minus10-consensus '%s'" % ($minus35_consensus, $minus10_consensus)
-  #if str($minus35_meme) not in ["", "None"]:
-    #set $simple_args = $simple_args + " --minus35-meme '%s'" % $minus35_meme
-  #end if
-  #if str($minus10_meme) not in ["", "None"]:
-    #set $simple_args = $simple_args + " --minus10-meme '%s'" % $minus10_meme
-  #end if
-#else:
-  #set $fimo_args = "--meme-file '%s' --fimo-binary '%s'" % ($meme_file, $fimo_binary)
-#end if
 \${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_motif_scanner.py'
   --input-fasta '$input_fasta'
   --output-tsv 'motif_hits.tsv'
   --log 'run_log.txt'
-  --mode '$mode'
-  $simple_args
-  $fimo_args
-  $reverse_arg
+  --mode '$scan_mode.mode'
+#if str($scan_mode.mode) == "simple":
+  --minus35-consensus '$scan_mode.minus35_consensus'
+  --minus10-consensus '$scan_mode.minus10_consensus'
+  #if str($scan_mode.minus35_pwm.use) == "yes":
+  --minus35-meme '$scan_mode.minus35_pwm.minus35_meme'
+  #end if
+  #if str($scan_mode.minus10_pwm.use) == "yes":
+  --minus10-meme '$scan_mode.minus10_pwm.minus10_meme'
+  #end if
+#else:
+  --meme-file '$scan_mode.meme_file'
+  --fimo-binary '$scan_mode.fimo_binary'
+#end if
+#if str($scan_reverse_complement) == "true":
+  --scan-reverse-complement
+#end if
   ]]></command>
   <inputs>
     <param name="input_fasta" type="data" format="fasta" label="Promoter FASTA" />
-    <param name="mode" type="select" label="Scanner mode">
-      <option value="simple" selected="true">Simple consensus/PWM scanner</option>
-      <option value="fimo">FIMO from MEME Suite</option>
-    </param>
-    <param name="minus35_consensus" type="text" value="TTGACA" label="-35 consensus" />
-    <param name="minus10_consensus" type="text" value="TATAAT" label="-10 consensus" />
-    <param name="minus35_meme" type="data" format="txt" optional="true" label="Optional -35 MEME PWM" />
-    <param name="minus10_meme" type="data" format="txt" optional="true" label="Optional -10 MEME PWM" />
-    <param name="meme_file" type="data" format="txt" optional="true" label="Combined MEME motif file for FIMO mode" help="Only required when Scanner mode is FIMO." />
-    <param name="fimo_binary" type="select" label="FIMO executable" help="Only used when Scanner mode is FIMO. Use PATH default when the promoter_tools conda environment is configured in job_conf.yml.">
-      <option value="fimo" selected="true">fimo from PATH</option>
-      <option value="/data/conda_envs/promoter_tools/bin/fimo">/data/conda_envs/promoter_tools/bin/fimo</option>
-    </param>
+    <conditional name="scan_mode">
+      <param name="mode" type="select" label="Scanner mode">
+        <option value="simple" selected="true">Simple consensus/PWM scanner</option>
+        <option value="fimo">FIMO from MEME Suite</option>
+      </param>
+      <when value="simple">
+        <param name="minus35_consensus" type="text" value="TTGACA" label="-35 consensus" />
+        <param name="minus10_consensus" type="text" value="TATAAT" label="-10 consensus" />
+        <conditional name="minus35_pwm">
+          <param name="use" type="select" label="Use optional -35 MEME PWM">
+            <option value="no" selected="true">No, use consensus</option>
+            <option value="yes">Yes, provide MEME PWM</option>
+          </param>
+          <when value="no" />
+          <when value="yes">
+            <param name="minus35_meme" type="data" format="txt" label="-35 MEME PWM" />
+          </when>
+        </conditional>
+        <conditional name="minus10_pwm">
+          <param name="use" type="select" label="Use optional -10 MEME PWM">
+            <option value="no" selected="true">No, use consensus</option>
+            <option value="yes">Yes, provide MEME PWM</option>
+          </param>
+          <when value="no" />
+          <when value="yes">
+            <param name="minus10_meme" type="data" format="txt" label="-10 MEME PWM" />
+          </when>
+        </conditional>
+      </when>
+      <when value="fimo">
+        <param name="meme_file" type="data" format="txt" label="Combined MEME motif file for FIMO mode" />
+        <param name="fimo_binary" type="select" label="FIMO executable" help="Use PATH default when the promoter_tools conda environment is configured in job_conf.yml.">
+          <option value="fimo" selected="true">fimo from PATH</option>
+          <option value="/data/conda_envs/promoter_tools/bin/fimo">/data/conda_envs/promoter_tools/bin/fimo</option>
+        </param>
+      </when>
+    </conditional>
     <param name="scan_reverse_complement" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Scan reverse complement too" />
   </inputs>
   <outputs>
@@ -53,6 +77,17 @@
   <tests>
     <test expect_num_outputs="2">
       <param name="input_fasta" value="example_promoters.fasta" />
+      <conditional name="scan_mode">
+        <param name="mode" value="simple" />
+        <param name="minus35_consensus" value="TTGACA" />
+        <param name="minus10_consensus" value="TATAAT" />
+        <conditional name="minus35_pwm">
+          <param name="use" value="no" />
+        </conditional>
+        <conditional name="minus10_pwm">
+          <param name="use" value="no" />
+        </conditional>
+      </conditional>
       <output name="motif_hits">
         <assert_contents>
           <has_text text="minus35" />
@@ -66,15 +101,13 @@
 用途
 ----
 
-本工具用于在启动子序列中扫描 sigma70 风格的 -35 和 -10 motif 候选位点。
-
-默认 -35 consensus 为 TTGACA，默认 -10 consensus 为 TATAAT。可用于 E. coli 或常见工程菌的基础 promoter 分析。
+本工具用于在 promoter 序列中扫描 sigma70 风格的 -35 和 -10 motif 候选位点。默认 -35 consensus 为 `TTGACA`，默认 -10 consensus 为 `TATAAT`。
 
 输入
 ----
 
 **Promoter FASTA**
-  输入启动子序列，建议先使用 Promoter Window Normalizer 统一窗口长度。
+  输入启动子序列。建议先使用 Promoter Window Normalizer 统一窗口长度和 TSS 对齐方式。
 
 参数说明
 --------
@@ -82,35 +115,30 @@
 **Scanner mode**
   扫描模式。
 
-  - Simple consensus/PWM scanner：不依赖外部程序，使用 consensus 或 MEME PWM 文件直接扫描。
-  - FIMO from MEME Suite：调用 MEME Suite 的 FIMO 进行 motif 扫描，需要服务器已安装 FIMO。
+  Simple consensus/PWM scanner：不依赖外部程序，使用 consensus 或可选 MEME PWM 文件直接扫描。
 
-**-35 consensus**
-  Simple 模式下使用的 -35 motif consensus。默认 TTGACA。
+  FIMO from MEME Suite：调用 MEME Suite 的 FIMO 进行 motif 扫描，需要服务器已安装 FIMO。
 
-**-10 consensus**
-  Simple 模式下使用的 -10 motif consensus。默认 TATAAT。
+**-35 consensus / -10 consensus**
+  Simple 模式下使用的 consensus。默认分别为 `TTGACA` 和 `TATAAT`。
 
-**Optional -35 MEME PWM**
-  可选的 -35 MEME PWM 文件。如果提供，则优先使用 PWM 评分，而不是 consensus 精确匹配比例。
-
-**Optional -10 MEME PWM**
-  可选的 -10 MEME PWM 文件。如果提供，则优先使用 PWM 评分。
+**Use optional -35/-10 MEME PWM**
+  默认不使用 PWM，只按 consensus 匹配比例评分。选择 Yes 时需要上传对应 MEME PWM 文件。
 
 **Combined MEME motif file for FIMO mode**
-  FIMO 模式下使用的 MEME motif 文件，可包含 minus35 和 minus10 两个 motif。
+  FIMO 模式下使用的 MEME motif 文件，可包含 `minus35` 和 `minus10` 两个 motif。
 
 **FIMO executable**
-  FIMO 可执行程序路径。通常选择 fimo from PATH 即可；如果 PATH 未配置，可选择 /data/conda_envs/promoter_tools/bin/fimo。
+  FIMO 可执行程序。通常选择 `fimo from PATH` 即可；如果 PATH 未配置，可选择 `/data/conda_envs/promoter_tools/bin/fimo`。
 
 **Scan reverse complement too**
-  是否同时扫描反向互补链。默认关闭。对于明确给定正向 promoter window 的输入，通常保持关闭。
+  是否同时扫描反向互补链。对于已按正向给定的 promoter window，通常保持关闭。
 
 输出
 ----
 
 **motif_hits.tsv**
-  motif 命中表，包含 sequence_id、motif_name、start、end、strand、matched_sequence、raw_score、normalized_score、p_value、q_value 和 source。
+  motif 命中表，包含 `sequence_id`、`motif_name`、`start`、`end`、`strand`、`matched_sequence`、`raw_score`、`normalized_score`、`p_value`、`q_value` 和 `source`。
 
 **run_log.txt**
   运行日志。
@@ -118,8 +146,8 @@
 注意事项
 --------
 
-- Simple 模式中的 normalized_score 为 motif 匹配比例或 PWM 相对得分。
-- FIMO 模式会输出 p_value/q_value，但依赖 MEME Suite 安装。
+- Simple 模式中的 `normalized_score` 是 motif 匹配比例或 PWM 相对得分。
+- FIMO 模式会输出 `p_value` 和 `q_value`，但依赖 MEME Suite 安装。
 - motif 命中多并不代表启动子一定强，后续需要用 Promoter Motif Pair Score 选择最佳 -35/-10 配对。
   ]]></help>
   <citations />

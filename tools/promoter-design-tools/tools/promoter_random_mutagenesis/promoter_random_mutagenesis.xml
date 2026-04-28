@@ -1,4 +1,5 @@
-<tool id="promoter_random_mutagenesis" name="Promoter Random Mutagenesis" version="0.1.0" profile="24.0">
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="promoter_random_mutagenesis" name="Promoter Random Mutagenesis" version="0.1.1" profile="24.0">
   <description>generate reproducible promoter mutant libraries</description>
   <requirements>
     <requirement type="package">python</requirement>
@@ -6,17 +7,11 @@
     <requirement type="package">pandas</requirement>
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
-#set $conservation_arg = "--conservation-tsv '%s'" % $conservation_tsv if str($conservation_tsv) not in ["", "None"] else ""
-#set $keep_length_arg = "--keep-length" if str($keep_length) == "true" else "--no-keep-length"
-#set $allow_n_arg = "--allow-n" if str($allow_n) == "true" else ""
-#set $avoid_stop_arg = "--avoid-stop-codons" if str($avoid_stop_codons) == "true" else ""
-#set $custom_region_args = ""
-#if str($region_mode) == "custom":
-  #set $custom_region_args = "--custom-start '%s' --custom-end '%s'" % ($custom_start, $custom_end)
-#end if
 \${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_random_mutagenesis.py'
   --input-fasta '$input_fasta'
-  $conservation_arg
+#if str($mutation_region.region_mode) == "minus35" or str($mutation_region.region_mode) == "minus10" or str($mutation_region.region_mode) == "spacer" or str($mutation_region.region_mode) == "non_core":
+  --conservation-tsv '$mutation_region.conservation_tsv'
+#end if
   --output-fasta 'mutants.fasta'
   --mutations-tsv 'mutations.tsv'
   --log 'run_log.txt'
@@ -25,16 +20,26 @@
   --mutation-count-mode '$mutation_count_mode'
   --mutation-count '$mutation_count'
   --mutation-rate '$mutation_rate'
-  --region-mode '$region_mode'
-  $custom_region_args
-  $keep_length_arg
-  $allow_n_arg
-  $avoid_stop_arg
+  --region-mode '$mutation_region.region_mode'
+#if str($mutation_region.region_mode) == "custom":
+  --custom-start '$mutation_region.custom_start'
+  --custom-end '$mutation_region.custom_end'
+#end if
+#if str($keep_length) == "true":
+  --keep-length
+#else:
+  --no-keep-length
+#end if
+#if str($allow_n) == "true":
+  --allow-n
+#end if
+#if str($avoid_stop_codons) == "true":
+  --avoid-stop-codons
+#end if
   --seed '$seed'
   ]]></command>
   <inputs>
     <param name="input_fasta" type="data" format="fasta" label="Normalized promoter FASTA" />
-    <param name="conservation_tsv" type="data" format="tabular" optional="true" label="Optional conservation TSV" />
     <param name="mutants_per_sequence" type="integer" value="10" min="1" label="Mutants per sequence" />
     <param name="mutation_mode" type="select" label="Mutation mode">
       <option value="snv" selected="true">SNV</option>
@@ -48,16 +53,33 @@
     </param>
     <param name="mutation_count" type="integer" value="1" min="0" label="Mutation count" />
     <param name="mutation_rate" type="float" value="0.01" min="0" label="Mutation rate" />
-    <param name="region_mode" type="select" label="Mutation region">
-      <option value="full" selected="true">Full promoter</option>
-      <option value="minus35">-35 motif</option>
-      <option value="minus10">-10 motif</option>
-      <option value="spacer">Spacer</option>
-      <option value="non_core">Non-core</option>
-      <option value="custom">Custom interval</option>
-    </param>
-    <param name="custom_start" type="integer" value="1" min="1" label="Custom start, 1-based" help="Only used when Mutation region is Custom interval." />
-    <param name="custom_end" type="integer" value="81" min="1" label="Custom end, 1-based" help="Only used when Mutation region is Custom interval." />
+    <conditional name="mutation_region">
+      <param name="region_mode" type="select" label="Mutation region">
+        <option value="full" selected="true">Full promoter</option>
+        <option value="minus35">-35 motif</option>
+        <option value="minus10">-10 motif</option>
+        <option value="spacer">Spacer</option>
+        <option value="non_core">Non-core</option>
+        <option value="custom">Custom interval</option>
+      </param>
+      <when value="full" />
+      <when value="minus35">
+        <param name="conservation_tsv" type="data" format="tabular" label="Conservation TSV from Promoter Motif Pair Score" />
+      </when>
+      <when value="minus10">
+        <param name="conservation_tsv" type="data" format="tabular" label="Conservation TSV from Promoter Motif Pair Score" />
+      </when>
+      <when value="spacer">
+        <param name="conservation_tsv" type="data" format="tabular" label="Conservation TSV from Promoter Motif Pair Score" />
+      </when>
+      <when value="non_core">
+        <param name="conservation_tsv" type="data" format="tabular" label="Conservation TSV from Promoter Motif Pair Score" />
+      </when>
+      <when value="custom">
+        <param name="custom_start" type="integer" value="1" min="1" label="Custom start, 1-based" />
+        <param name="custom_end" type="integer" value="81" min="1" label="Custom end, 1-based" />
+      </when>
+    </conditional>
     <param name="keep_length" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Keep promoter length" />
     <param name="allow_n" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Allow mutation at N positions" />
     <param name="avoid_stop_codons" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Avoid stop codons, reserved for CDS use" />
@@ -71,8 +93,10 @@
   <tests>
     <test expect_num_outputs="3">
       <param name="input_fasta" value="example_promoters.fasta" />
-      <param name="conservation_tsv" value="promoter_conservation.tsv" />
       <param name="mutants_per_sequence" value="2" />
+      <conditional name="mutation_region">
+        <param name="region_mode" value="full" />
+      </conditional>
       <param name="seed" value="42" />
       <output name="mutations_tsv">
         <assert_contents>
@@ -86,7 +110,7 @@
 用途
 ----
 
-本工具用于对 promoter 序列进行随机突变，生成 promoter mutant library。所有随机过程均支持 seed，便于复现实验设计。
+本工具用于对 promoter 序列进行随机突变，生成 promoter mutant library。所有随机过程都支持 seed，便于复现实验设计。
 
 输入
 ----
@@ -94,53 +118,44 @@
 **Normalized promoter FASTA**
   输入 promoter FASTA，通常来自 Promoter Window Normalizer。
 
-**Optional conservation TSV**
-  可选输入，通常来自 Promoter Motif Pair Score。当突变区域选择 minus35、minus10、spacer 或 non_core 时，需要该文件来定位核心区域。
-
 参数说明
 --------
 
 **Mutants per sequence**
-  每条 parent promoter 生成多少个突变体。默认 10。
+  每条 parent promoter 生成多少个突变体，默认 10。
 
 **Mutation mode**
   突变类型。
 
-  - SNV：单碱基替换，默认模式。
-  - Insertion：插入碱基。
-  - Deletion：删除碱基。
-  - Mixed：随机混合 SNV、插入和删除。
+  SNV：单碱基替换，默认模式。
+
+  Insertion：插入碱基。
+
+  Deletion：删除碱基。
+
+  Mixed：随机混合 SNV、插入和删除。
 
 **Mutation count mode**
   每个突变体突变数的计算方式。
 
-  - Fixed：每个突变体固定突变 mutation_count 个位置。
-  - Rate：按 mutation_rate 和可突变区域长度估算突变数。
+  Fixed：每个突变体固定突变 `mutation_count` 个位置。
 
-**Mutation count**
-  Fixed 模式下每个突变体的突变数量。默认 1。
-
-**Mutation rate**
-  Rate 模式下使用的突变率。默认 0.01。
+  Rate：按 `mutation_rate` 和可突变区域长度估算突变数。
 
 **Mutation region**
   突变区域。
 
-  - Full promoter：全长 promoter。
-  - -35 motif：只突变 -35 区域，需要 conservation TSV。
-  - -10 motif：只突变 -10 区域，需要 conservation TSV。
-  - Spacer：只突变 -35 和 -10 之间的 spacer，需要 conservation TSV。
-  - Non-core：突变非 -35/-10/spacer 区域，需要 conservation TSV。
-  - Custom interval：用户自定义 1-based 区间。
+  Full promoter：全长 promoter。
 
-**Custom start / Custom end**
-  仅在 Mutation region 选择 Custom interval 时使用，表示自定义突变区域的 1-based 起止坐标。其他区域模式下会忽略这两个值。
+  -35 motif / -10 motif / Spacer / Non-core：需要提供 Promoter Motif Pair Score 输出的 conservation TSV，用于定位核心区域。
+
+  Custom interval：用户自定义 1-based 起止坐标。
 
 **Keep promoter length**
   是否保持 promoter 长度不变。默认开启。开启时 insertion/deletion 不允许执行，mixed 模式会退化为 SNV。
 
 **Allow mutation at N positions**
-  是否允许在 N 位点突变。默认关闭。
+  是否允许在 N 位点突变，默认关闭。
 
 **Avoid stop codons**
   为 CDS 场景预留。promoter 不是编码区，默认关闭，当前仅记录提示。
@@ -152,10 +167,10 @@
 ----
 
 **mutants.fasta**
-  突变体 FASTA，ID 格式为 parentID_mut000001。
+  突变体 FASTA，ID 格式为 `parentID_mut000001`。
 
 **mutations.tsv**
-  突变事件表，包含 mutant_id、parent_id、mutation_index、mutation_type、position_1based、ref、alt、region 和 seed。
+  突变事件表，包含 `mutant_id`、`parent_id`、`mutation_index`、`mutation_type`、`position_1based`、`ref`、`alt`、`region` 和 `seed`。
 
 **run_log.txt**
   运行日志。
@@ -165,7 +180,7 @@
 
 - SNV 不会突变成原碱基。
 - 默认不会突变 N 位置。
-- 如果选择核心区域或 non_core，但未提供 conservation TSV，工具无法知道 -35/-10/spacer 坐标。
+- 如果选择核心区域或 non_core，必须提供 conservation TSV，否则工具无法知道 -35/-10/spacer 坐标。
   ]]></help>
   <citations />
 </tool>
