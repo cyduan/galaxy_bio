@@ -69,8 +69,64 @@
     </test>
   </tests>
   <help><![CDATA[
-Scan promoter sequences for -35 and -10 candidates. Simple mode uses consensus
-matching or MEME PWM files. FIMO mode requires MEME Suite to be installed.
+用途
+----
+
+本工具用于在启动子序列中扫描 sigma70 风格的 -35 和 -10 motif 候选位点。
+
+默认 -35 consensus 为 TTGACA，默认 -10 consensus 为 TATAAT。可用于 E. coli 或常见工程菌的基础 promoter 分析。
+
+输入
+----
+
+**Promoter FASTA**
+  输入启动子序列，建议先使用 Promoter Window Normalizer 统一窗口长度。
+
+参数说明
+--------
+
+**Scanner mode**
+  扫描模式。
+
+  - Simple consensus/PWM scanner：不依赖外部程序，使用 consensus 或 MEME PWM 文件直接扫描。
+  - FIMO from MEME Suite：调用 MEME Suite 的 FIMO 进行 motif 扫描，需要服务器已安装 FIMO。
+
+**-35 consensus**
+  Simple 模式下使用的 -35 motif consensus。默认 TTGACA。
+
+**-10 consensus**
+  Simple 模式下使用的 -10 motif consensus。默认 TATAAT。
+
+**Optional -35 MEME PWM**
+  可选的 -35 MEME PWM 文件。如果提供，则优先使用 PWM 评分，而不是 consensus 精确匹配比例。
+
+**Optional -10 MEME PWM**
+  可选的 -10 MEME PWM 文件。如果提供，则优先使用 PWM 评分。
+
+**Combined MEME motif file for FIMO mode**
+  FIMO 模式下使用的 MEME motif 文件，可包含 minus35 和 minus10 两个 motif。
+
+**FIMO executable**
+  FIMO 可执行程序路径。通常选择 fimo from PATH 即可；如果 PATH 未配置，可选择 /data/conda_envs/promoter_tools/bin/fimo。
+
+**Scan reverse complement too**
+  是否同时扫描反向互补链。默认关闭。对于明确给定正向 promoter window 的输入，通常保持关闭。
+
+输出
+----
+
+**motif_hits.tsv**
+  motif 命中表，包含 sequence_id、motif_name、start、end、strand、matched_sequence、raw_score、normalized_score、p_value、q_value 和 source。
+
+**run_log.txt**
+  运行日志。
+
+注意事项
+--------
+
+- Simple 模式中的 normalized_score 为 motif 匹配比例或 PWM 相对得分。
+- FIMO 模式会输出 p_value/q_value，但依赖 MEME Suite 安装。
+- motif 命中多并不代表启动子一定强，后续需要用 Promoter Motif Pair Score 选择最佳 -35/-10 配对。
   ]]></help>
   <citations />
 </tool>

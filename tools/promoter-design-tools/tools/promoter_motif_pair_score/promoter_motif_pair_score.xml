@@ -52,8 +52,77 @@
     </test>
   </tests>
   <help><![CDATA[
-Find the best -35/-10 pair per promoter and calculate a conservation score from
-the two motif scores plus spacer quality.
+用途
+----
+
+本工具用于从 motif hits 中为每条 promoter 选择最佳 -35 / -10 配对，并计算启动子核心元件保守性评分。
+
+保守性分数综合考虑 -35 motif 得分、-10 motif 得分和 spacer 长度质量。默认适用于 E. coli / 常见工程菌 sigma70 promoter。
+
+输入
+----
+
+**Motif hits TSV**
+  Promoter Motif Scanner 的输出结果。
+
+**Normalized promoter FASTA**
+  标准化后的 promoter FASTA。通常来自 Promoter Window Normalizer。
+
+参数说明
+--------
+
+**-35 motif name**
+  motif hits 表中 -35 motif 的名称。默认 minus35。
+
+**-10 motif name**
+  motif hits 表中 -10 motif 的名称。默认 minus10。
+
+**Minimum spacer length**
+  推荐 spacer 长度下限。默认 16 bp。
+
+**Maximum spacer length**
+  推荐 spacer 长度上限。默认 18 bp。
+
+**Optimal spacer length**
+  最优 spacer 长度。默认 17 bp。
+
+**-35 score weight**
+  -35 motif 得分在总 conservation_score 中的权重。默认 0.4。
+
+**-10 score weight**
+  -10 motif 得分在总 conservation_score 中的权重。默认 0.4。
+
+**Spacer score weight**
+  spacer 得分在总 conservation_score 中的权重。默认 0.2。
+
+**Drop pairs outside spacer range**
+  如果开启，则丢弃 spacer 不在 min/max 范围内的配对。默认关闭；关闭时会保留但强烈惩罚 spacer_score。
+
+评分说明
+--------
+
+spacer 定义为：
+
+  minus10_start - minus35_end - 1
+
+总分为：
+
+  conservation_score = weight_minus35 * minus35_score + weight_minus10 * minus10_score + weight_spacer * spacer_score
+
+输出
+----
+
+**promoter_conservation.tsv**
+  每条 promoter 的最佳 -35/-10 配对和 conservation score。
+
+**run_log.txt**
+  运行日志。
+
+注意事项
+--------
+
+- conservation_score 衡量核心 motif 保守性，不等同于真实启动子强度。
+- 如果没有合格配对，结果中 status 会标记为 no_valid_pair。
   ]]></help>
   <citations />
 </tool>

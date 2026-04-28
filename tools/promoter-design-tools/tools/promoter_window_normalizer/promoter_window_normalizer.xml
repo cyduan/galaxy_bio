@@ -50,8 +50,50 @@
     </test>
   </tests>
   <help><![CDATA[
-Normalize promoter windows to a fixed length. The default assumes an E. coli
-style input window from -60 to +20, where the +1 TSS is base 61.
+用途
+----
+
+本工具用于将启动子 FASTA 序列统一整理成固定长度的 promoter window，便于后续进行 -35/-10 motif 扫描、保守性评分和突变设计。
+
+默认假设输入是常见的 E. coli / 工程菌 sigma70 promoter window，即相对于 TSS 的 -60 到 +20 区间，总长度 81 bp，其中第 61 个碱基为 +1 TSS。
+
+输入
+----
+
+**Promoter FASTA**
+  输入启动子序列，格式为 FASTA。序列会被转换为大写，U 会转换为 T。
+
+参数说明
+--------
+
+**Target promoter window length**
+  输出序列的目标长度。默认值为 81，对应 -60 到 +20 的窗口。
+
+**TSS offset in the window**
+  TSS 在窗口中的 0-based 位置。默认值为 60，表示第 61 个碱基是 +1。
+
+**Padding/replacement base**
+  当序列过短时用于补齐的碱基；当发现非法字符时也会用该字符替换。默认值为 N。
+
+处理规则
+--------
+
+- 序列长度等于目标长度：原样输出。
+- 序列过长：按当前实现从左侧起截取到目标长度。
+- 序列过短：在右侧补齐到目标长度。
+- 非 A/C/G/T/N 字符：替换为指定 padding base，并在报告中记录 warning。
+
+输出
+----
+
+**normalized_promoters.fasta**
+  标准化后的启动子 FASTA。
+
+**normalization_report.tsv**
+  标准化报告，包含 sequence_id、original_length、normalized_length、status 和 warning。
+
+**run_log.txt**
+  运行日志。
   ]]></help>
   <citations />
 </tool>

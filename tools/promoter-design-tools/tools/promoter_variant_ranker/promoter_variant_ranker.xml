@@ -67,8 +67,79 @@
     </test>
   </tests>
   <help><![CDATA[
-Merge parent and mutant conservation scores, strength predictions, and mutation
-events. Produces a ranked TSV, an HTML summary, and two PNG visualizations.
+用途
+----
+
+本工具用于整合 WT 和 mutant 的保守性评分、强度预测和突变事件，生成最终候选 promoter variant 排名，并输出 HTML 摘要和可视化图。
+
+输入
+----
+
+**WT conservation TSV**
+  WT promoter 的 conservation 结果，来自 Promoter Motif Pair Score。
+
+**Mutant conservation TSV**
+  突变体 promoter 的 conservation 结果，来自 Promoter Motif Pair Score。
+
+**WT strength TSV**
+  WT promoter 的强度预测结果，来自 Promoter Strength Predictor。
+
+**Mutant strength TSV**
+  突变体 promoter 的强度预测结果，来自 Promoter Strength Predictor。
+
+**Mutations TSV**
+  突变事件表，来自 Promoter Random Mutagenesis。
+
+参数说明
+--------
+
+**Rank by**
+  排序依据。
+
+  - Predicted strength：按突变体预测强度排序。
+  - Fold-change vs parent：按相对于 parent 的强度倍数排序。
+  - Conservation score：按突变体 conservation score 排序。
+  - Custom composite score：综合强度、fold-change 和 conservation 的自定义排序。
+
+**Minimum mutant conservation score**
+  仅保留 conservation score 大于等于该值的突变体。留空表示不过滤。
+
+**Maximum mutant conservation score**
+  仅保留 conservation score 小于等于该值的突变体。留空表示不过滤。
+
+**Minimum fold-change**
+  仅保留相对 parent 强度倍数大于等于该值的突变体。留空表示不过滤。
+
+**Maximum fold-change**
+  仅保留相对 parent 强度倍数小于等于该值的突变体。留空表示不过滤。
+
+**Filter out variants mutating -35 or -10 core motifs**
+  如果开启，会过滤掉突变发生在 -35 或 -10 核心 motif 的变体。适合希望尽量保留核心 motif 的保守设计。
+
+输出
+----
+
+**ranked_promoter_variants.tsv**
+  最终排序表，包含 mutant_id、parent_id、mutation_summary、mutated_regions、parent_conservation_score、mutant_conservation_score、delta_conservation_score、parent_strength、mutant_strength、fold_change_vs_parent、rank 和 recommendation。
+
+**summary.html**
+  HTML 摘要，展示候选数量、强度分布概览和 top candidates。
+
+**strength_distribution.png**
+  突变体预测强度分布图。
+
+**conservation_vs_strength.png**
+  conservation score 与 predicted strength 的散点图。
+
+**run_log.txt**
+  运行日志。
+
+注意事项
+--------
+
+- recommendation 是辅助筛选标签，不等于实验验证结论。
+- 如果上游使用 heuristic strength，排序结果应理解为相对优先级。
+- 最终候选建议结合核心 motif 是否被破坏、fold-change、conservation 和实验可行性共同判断。
   ]]></help>
   <citations />
 </tool>

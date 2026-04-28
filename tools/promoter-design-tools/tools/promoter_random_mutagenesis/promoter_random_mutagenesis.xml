@@ -92,8 +92,89 @@
     </test>
   </tests>
   <help><![CDATA[
-Generate random promoter libraries with reproducible seeds. Region-aware modes
-use the conservation TSV produced by Promoter Motif Pair Score.
+用途
+----
+
+本工具用于对 promoter 序列进行随机突变，生成 promoter mutant library。所有随机过程均支持 seed，便于复现实验设计。
+
+输入
+----
+
+**Normalized promoter FASTA**
+  输入 promoter FASTA，通常来自 Promoter Window Normalizer。
+
+**Optional conservation TSV**
+  可选输入，通常来自 Promoter Motif Pair Score。当突变区域选择 minus35、minus10、spacer 或 non_core 时，需要该文件来定位核心区域。
+
+参数说明
+--------
+
+**Mutants per sequence**
+  每条 parent promoter 生成多少个突变体。默认 10。
+
+**Mutation mode**
+  突变类型。
+
+  - SNV：单碱基替换，默认模式。
+  - Insertion：插入碱基。
+  - Deletion：删除碱基。
+  - Mixed：随机混合 SNV、插入和删除。
+
+**Mutation count mode**
+  每个突变体突变数的计算方式。
+
+  - Fixed：每个突变体固定突变 mutation_count 个位置。
+  - Rate：按 mutation_rate 和可突变区域长度估算突变数。
+
+**Mutation count**
+  Fixed 模式下每个突变体的突变数量。默认 1。
+
+**Mutation rate**
+  Rate 模式下使用的突变率。默认 0.01。
+
+**Mutation region**
+  突变区域。
+
+  - Full promoter：全长 promoter。
+  - -35 motif：只突变 -35 区域，需要 conservation TSV。
+  - -10 motif：只突变 -10 区域，需要 conservation TSV。
+  - Spacer：只突变 -35 和 -10 之间的 spacer，需要 conservation TSV。
+  - Non-core：突变非 -35/-10/spacer 区域，需要 conservation TSV。
+  - Custom interval：用户自定义 1-based 区间。
+
+**Custom start / Custom end**
+  仅在 Custom interval 模式下出现，表示自定义突变区域的 1-based 起止坐标。
+
+**Keep promoter length**
+  是否保持 promoter 长度不变。默认开启。开启时 insertion/deletion 不允许执行，mixed 模式会退化为 SNV。
+
+**Allow mutation at N positions**
+  是否允许在 N 位点突变。默认关闭。
+
+**Avoid stop codons**
+  为 CDS 场景预留。promoter 不是编码区，默认关闭，当前仅记录提示。
+
+**Random seed**
+  随机种子。相同输入和相同 seed 会产生可复现的突变库。
+
+输出
+----
+
+**mutants.fasta**
+  突变体 FASTA，ID 格式为 parentID_mut000001。
+
+**mutations.tsv**
+  突变事件表，包含 mutant_id、parent_id、mutation_index、mutation_type、position_1based、ref、alt、region 和 seed。
+
+**run_log.txt**
+  运行日志。
+
+注意事项
+--------
+
+- SNV 不会突变成原碱基。
+- 默认不会突变 N 位置。
+- 如果选择核心区域或 non_core，但未提供 conservation TSV，工具无法知道 -35/-10/spacer 坐标。
   ]]></help>
   <citations />
 </tool>
