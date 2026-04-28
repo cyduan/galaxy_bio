@@ -105,45 +105,97 @@ def predict_promoter_calculator(
     tmp_path = Path.cwd() / f"promoter_calculator_{uuid.uuid4().hex}"
     tmp_path.mkdir(parents=True, exist_ok=False)
     try:
-        input_fasta = tmp_path / "input.fasta"
-        output_tsv = tmp_path / "promoter_calculator.tsv"
-        write_fasta(records, input_fasta)
-        rendered = command_template.format(
-            input_fasta=input_fasta,
-            output_tsv=output_tsv,
-            organism=organism,
-            threads=threads,
-        )
-        completed = subprocess.run(shlex.split(rendered, posix=(os.name != "nt")), capture_output=True, text=True)
-        if completed.returncode != 0:
-            raise RuntimeError(
-                "Promoter Calculator command failed with exit code "
-                f"{completed.returncode}\nSTDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
+        predictions: list[StrengthPrediction] = []
+        for index, record in enumerate(records, start=1):
+            # The Barrick Lab CLI reads FASTA files as one concatenated sequence,
+            # so run it once per record to preserve Galaxy sequence IDs.
+            safe_id = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in record.identifier) or f"record_{index}"
+            input_fasta = tmp_path / f"{safe_id}.fasta"
+            output_tsv = tmp_path / f"{safe_id}.csv"
+            write_fasta([record], input_fasta)
+            rendered = command_template.format(
+                input_fasta=input_fasta,
+                output_tsv=output_tsv,
+                organism=organism,
+                threads=threads,
             )
-        if not output_tsv.exists():
-            if completed.stdout.strip():
-                output_tsv.write_text(completed.stdout, encoding="utf-8")
-            else:
-                raise RuntimeError("Promoter Calculator completed but no output TSV was produced.")
-        return parse_promoter_calculator_output(output_tsv)
+            completed = subprocess.run(shlex.split(rendered, posix=(os.name != "nt")), capture_output=True, text=True)
+            if completed.returncode != 0:
+                raise RuntimeError(
+                    f"Promoter Calculator command failed for {record.identifier} with exit code "
+                    f"{completed.returncode}\nSTDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
+                )
+            if not output_tsv.exists():
+                if completed.stdout.strip():
+                    output_tsv.write_text(completed.stdout, encoding="utf-8")
+                else:
+                    predictions.append(
+                        StrengthPrediction(
+                            sequence_id=record.identifier,
+                            predicted_strength=0.0,
+                            log10_strength=round(math.log10(1e-9), 6),
+                            backend="promoter_calculator",
+                            model_version="barricklab_promotercalculator",
+                            warning="no_promoter_calculator_output",
+                        )
+                    )
+                    continue
+            predictions.extend(parse_promoter_calculator_output(output_tsv, fallback_sequence_id=record.identifier))
+        return predictions
     finally:
         shutil.rmtree(tmp_path, ignore_errors=True)
 
 
-def parse_promoter_calculator_output(path: Path) -> list[StrengthPrediction]:
+def parse_promoter_calculator_output(path: Path, fallback_sequence_id: str | None = None) -> list[StrengthPrediction]:
     df = pd.read_csv(path, sep=None, engine="python")
+    df.columns = [str(column).strip() for column in df.columns]
     if "sequence_id" not in df.columns:
         for candidate in ["id", "name", "promoter", "variant"]:
             if candidate in df.columns:
                 df = df.rename(columns={candidate: "sequence_id"})
                 break
     if "predicted_strength" not in df.columns:
-        for candidate in ["strength", "expression", "tx_rate", "transcription_rate"]:
-            if candidate in df.columns:
-                df = df.rename(columns={candidate: "predicted_strength"})
+        lower_to_original = {str(column).lower(): column for column in df.columns}
+        for candidate in [
+            "predicted_strength",
+            "strength",
+            "expression",
+            "tx_rate",
+            "tx rate",
+            "txrate",
+            "transcription_rate",
+            "transcription initiation rate",
+            "transcription_initiation_rate",
+        ]:
+            original_column = lower_to_original.get(candidate)
+            if original_column is not None:
+                df = df.rename(columns={original_column: "predicted_strength"})
                 break
+    if "predicted_strength" in df.columns and fallback_sequence_id and "sequence_id" not in df.columns:
+        df.insert(0, "sequence_id", fallback_sequence_id)
     if "sequence_id" not in df.columns or "predicted_strength" not in df.columns:
-        raise RuntimeError("Promoter Calculator output must contain sequence_id and predicted_strength columns.")
+        raise RuntimeError(
+            "Promoter Calculator output must contain sequence_id and predicted_strength columns, "
+            "or a supported strength column such as Tx_rate."
+        )
+    if fallback_sequence_id:
+        df["sequence_id"] = fallback_sequence_id
+        df["predicted_strength"] = pd.to_numeric(df["predicted_strength"], errors="coerce")
+        df = df.dropna(subset=["predicted_strength"])
+        if df.empty:
+            return [
+                StrengthPrediction(
+                    sequence_id=fallback_sequence_id,
+                    predicted_strength=0.0,
+                    log10_strength=round(math.log10(1e-9), 6),
+                    backend="promoter_calculator",
+                    model_version="barricklab_promotercalculator",
+                    warning="no_numeric_tx_rate_found",
+                )
+            ]
+        # One Galaxy input sequence should yield one row. Use the strongest
+        # predicted promoter hit reported by the external calculator.
+        df = df.sort_values("predicted_strength", ascending=False).head(1)
     predictions: list[StrengthPrediction] = []
     for _, row in df.iterrows():
         predicted = float(row["predicted_strength"])
@@ -153,7 +205,7 @@ def parse_promoter_calculator_output(path: Path) -> list[StrengthPrediction]:
                 predicted_strength=round(predicted, 6),
                 log10_strength=round(math.log10(max(predicted, 1e-9)), 6),
                 backend="promoter_calculator",
-                model_version=str(row.get("model_version", "external_adapter")),
+                model_version=str(row.get("model_version", "barricklab_promotercalculator")),
                 warning=str(row.get("warning", "")),
             )
         )
