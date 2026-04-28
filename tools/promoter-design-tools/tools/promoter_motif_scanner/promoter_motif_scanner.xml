@@ -7,37 +7,49 @@
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
 #set $reverse_arg = "--scan-reverse-complement" if str($scan_reverse_complement) == "true" else ""
-#set $minus35_meme_arg = "--minus35-meme '%s'" % $minus35_meme if str($minus35_meme) not in ["", "None"] else ""
-#set $minus10_meme_arg = "--minus10-meme '%s'" % $minus10_meme if str($minus10_meme) not in ["", "None"] else ""
-#set $meme_file_arg = "--meme-file '%s'" % $meme_file if str($meme_file) not in ["", "None"] else ""
+#set $simple_args = ""
+#set $fimo_args = ""
+#if str($scanner.mode) == "simple":
+  #set $simple_args = "--minus35-consensus '%s' --minus10-consensus '%s'" % ($scanner.minus35_consensus, $scanner.minus10_consensus)
+  #if str($scanner.minus35_meme) not in ["", "None"]:
+    #set $simple_args = $simple_args + " --minus35-meme '%s'" % $scanner.minus35_meme
+  #end if
+  #if str($scanner.minus10_meme) not in ["", "None"]:
+    #set $simple_args = $simple_args + " --minus10-meme '%s'" % $scanner.minus10_meme
+  #end if
+#else:
+  #set $fimo_args = "--meme-file '%s' --fimo-binary '%s'" % ($scanner.meme_file, $scanner.fimo_binary)
+#end if
 \${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_motif_scanner.py'
   --input-fasta '$input_fasta'
   --output-tsv 'motif_hits.tsv'
   --log 'run_log.txt'
-  --mode '$mode'
-  --minus35-consensus '$minus35_consensus'
-  --minus10-consensus '$minus10_consensus'
-  --fimo-binary '$fimo_binary'
-  $minus35_meme_arg
-  $minus10_meme_arg
-  $meme_file_arg
+  --mode '$scanner.mode'
+  $simple_args
+  $fimo_args
   $reverse_arg
   ]]></command>
   <inputs>
     <param name="input_fasta" type="data" format="fasta" label="Promoter FASTA" />
-    <param name="mode" type="select" label="Scanner mode">
-      <option value="simple" selected="true">Simple consensus/PWM scanner</option>
-      <option value="fimo">FIMO from MEME Suite</option>
-    </param>
-    <param name="minus35_consensus" type="text" value="TTGACA" label="-35 consensus" />
-    <param name="minus10_consensus" type="text" value="TATAAT" label="-10 consensus" />
-    <param name="minus35_meme" type="data" format="txt" optional="true" label="Optional -35 MEME PWM" />
-    <param name="minus10_meme" type="data" format="txt" optional="true" label="Optional -10 MEME PWM" />
-    <param name="meme_file" type="data" format="txt" optional="true" label="Combined MEME motif file for FIMO mode" />
-    <param name="fimo_binary" type="select" label="FIMO executable" help="Only used when Scanner mode is FIMO. Use PATH default when the promoter_tools conda environment is configured in job_conf.yml.">
-      <option value="fimo" selected="true">fimo from PATH</option>
-      <option value="/data/conda_envs/promoter_tools/bin/fimo">/data/conda_envs/promoter_tools/bin/fimo</option>
-    </param>
+    <conditional name="scanner">
+      <param name="mode" type="select" label="Scanner mode">
+        <option value="simple" selected="true">Simple consensus/PWM scanner</option>
+        <option value="fimo">FIMO from MEME Suite</option>
+      </param>
+      <when value="simple">
+        <param name="minus35_consensus" type="text" value="TTGACA" label="-35 consensus" />
+        <param name="minus10_consensus" type="text" value="TATAAT" label="-10 consensus" />
+        <param name="minus35_meme" type="data" format="txt" optional="true" label="Optional -35 MEME PWM" />
+        <param name="minus10_meme" type="data" format="txt" optional="true" label="Optional -10 MEME PWM" />
+      </when>
+      <when value="fimo">
+        <param name="meme_file" type="data" format="txt" label="Combined MEME motif file for FIMO mode" />
+        <param name="fimo_binary" type="select" label="FIMO executable" help="Use PATH default when the promoter_tools conda environment is configured in job_conf.yml.">
+          <option value="fimo" selected="true">fimo from PATH</option>
+          <option value="/data/conda_envs/promoter_tools/bin/fimo">/data/conda_envs/promoter_tools/bin/fimo</option>
+        </param>
+      </when>
+    </conditional>
     <param name="scan_reverse_complement" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Scan reverse complement too" />
   </inputs>
   <outputs>
@@ -47,7 +59,6 @@
   <tests>
     <test expect_num_outputs="2">
       <param name="input_fasta" value="example_promoters.fasta" />
-      <param name="mode" value="simple" />
       <output name="motif_hits">
         <assert_contents>
           <has_text text="minus35" />

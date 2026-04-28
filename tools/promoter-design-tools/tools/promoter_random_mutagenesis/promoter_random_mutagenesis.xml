@@ -7,11 +7,13 @@
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
 #set $conservation_arg = "--conservation-tsv '%s'" % $conservation_tsv if str($conservation_tsv) not in ["", "None"] else ""
-#set $keep_length_arg = "--keep-length" if $keep_length else "--no-keep-length"
-#set $allow_n_arg = "--allow-n" if $allow_n else ""
-#set $avoid_stop_arg = "--avoid-stop-codons" if $avoid_stop_codons else ""
-#set $custom_start_arg = "--custom-start '%s'" % $custom_start if str($custom_start) not in ["", "None"] else ""
-#set $custom_end_arg = "--custom-end '%s'" % $custom_end if str($custom_end) not in ["", "None"] else ""
+#set $keep_length_arg = "--keep-length" if str($keep_length) == "true" else "--no-keep-length"
+#set $allow_n_arg = "--allow-n" if str($allow_n) == "true" else ""
+#set $avoid_stop_arg = "--avoid-stop-codons" if str($avoid_stop_codons) == "true" else ""
+#set $custom_region_args = ""
+#if str($region.region_mode) == "custom":
+  #set $custom_region_args = "--custom-start '%s' --custom-end '%s'" % ($region.custom_start, $region.custom_end)
+#end if
 \${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_random_mutagenesis.py'
   --input-fasta '$input_fasta'
   $conservation_arg
@@ -23,9 +25,8 @@
   --mutation-count-mode '$mutation_count_mode'
   --mutation-count '$mutation_count'
   --mutation-rate '$mutation_rate'
-  --region-mode '$region_mode'
-  $custom_start_arg
-  $custom_end_arg
+  --region-mode '$region.region_mode'
+  $custom_region_args
   $keep_length_arg
   $allow_n_arg
   $avoid_stop_arg
@@ -47,16 +48,25 @@
     </param>
     <param name="mutation_count" type="integer" value="1" min="0" label="Mutation count" />
     <param name="mutation_rate" type="float" value="0.01" min="0" label="Mutation rate" />
-    <param name="region_mode" type="select" label="Mutation region">
-      <option value="full" selected="true">Full promoter</option>
-      <option value="minus35">-35 motif</option>
-      <option value="minus10">-10 motif</option>
-      <option value="spacer">Spacer</option>
-      <option value="non_core">Non-core</option>
-      <option value="custom">Custom interval</option>
-    </param>
-    <param name="custom_start" type="integer" optional="true" label="Custom start, 1-based" />
-    <param name="custom_end" type="integer" optional="true" label="Custom end, 1-based" />
+    <conditional name="region">
+      <param name="region_mode" type="select" label="Mutation region">
+        <option value="full" selected="true">Full promoter</option>
+        <option value="minus35">-35 motif</option>
+        <option value="minus10">-10 motif</option>
+        <option value="spacer">Spacer</option>
+        <option value="non_core">Non-core</option>
+        <option value="custom">Custom interval</option>
+      </param>
+      <when value="full" />
+      <when value="minus35" />
+      <when value="minus10" />
+      <when value="spacer" />
+      <when value="non_core" />
+      <when value="custom">
+        <param name="custom_start" type="integer" value="1" min="1" label="Custom start, 1-based" />
+        <param name="custom_end" type="integer" value="81" min="1" label="Custom end, 1-based" />
+      </when>
+    </conditional>
     <param name="keep_length" type="boolean" checked="true" truevalue="true" falsevalue="false" label="Keep promoter length" />
     <param name="allow_n" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Allow mutation at N positions" />
     <param name="avoid_stop_codons" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Avoid stop codons, reserved for CDS use" />
