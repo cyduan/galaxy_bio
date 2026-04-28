@@ -73,6 +73,19 @@ execution:
         - name: PROTEINSOL_COMMAND
           value: /data/tools/protein-sol/run_protein_sol.sh {input_fasta} {output_dir}
 
+    promoter_design_local:
+      runner: local
+      env:
+        # Install MEME Suite/FIMO and Promoter Calculator into this conda
+        # environment. The fixed PATH avoids relying on shell startup files.
+        - name: PATH
+          value: /data/conda_envs/promoter_tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        # The Promoter Calculator wrapper expects this command to write a TSV
+        # containing either `sequence_id,predicted_strength` columns or common
+        # aliases such as `id,strength`.
+        - name: PROMOTER_CALCULATOR_COMMAND
+          value: /data/conda_envs/promoter_tools/bin/promoter-calculator -i {input_fasta} -o {output_tsv} --threads {threads}
+
     docker_local:
       runner: local
       docker_enabled: true
@@ -152,14 +165,14 @@ tools:
 - id: foundry_mpnn
   environment: foundry_local
 - id: promoter_window_normalizer
-  environment: local
+  environment: promoter_design_local
 - id: promoter_motif_scanner
-  environment: local
+  environment: promoter_design_local
 - id: promoter_motif_pair_score
-  environment: local
+  environment: promoter_design_local
 - id: promoter_random_mutagenesis
-  environment: local
+  environment: promoter_design_local
 - id: promoter_strength_predictor
-  environment: local
+  environment: promoter_design_local
 - id: promoter_variant_ranker
-  environment: local
+  environment: promoter_design_local
