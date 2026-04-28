@@ -8,7 +8,7 @@
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
 #set $keep_core_arg = "--keep-core-motif" if $keep_core_motif else ""
-python '$__tool_directory__/promoter_variant_ranker.py'
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_variant_ranker.py'
   --wt-conservation '$wt_conservation'
   --mutant-conservation '$mutant_conservation'
   --wt-strength '$wt_strength'
@@ -72,4 +72,3 @@ events. Produces a ranked TSV, an HTML summary, and two PNG visualizations.
   ]]></help>
   <citations />
 </tool>
-

@@ -10,7 +10,7 @@
 #set $minus35_meme_arg = "--minus35-meme '%s'" % $minus35_meme if str($minus35_meme) not in ["", "None"] else ""
 #set $minus10_meme_arg = "--minus10-meme '%s'" % $minus10_meme if str($minus10_meme) not in ["", "None"] else ""
 #set $meme_file_arg = "--meme-file '%s'" % $meme_file if str($meme_file) not in ["", "None"] else ""
-python '$__tool_directory__/promoter_motif_scanner.py'
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_motif_scanner.py'
   --input-fasta '$input_fasta'
   --output-tsv 'motif_hits.tsv'
   --log 'run_log.txt'

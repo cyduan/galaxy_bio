@@ -80,6 +80,8 @@ execution:
         # environment. The fixed PATH avoids relying on shell startup files.
         - name: PATH
           value: /data/conda_envs/promoter_tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: PROMOTER_TOOLS_PYTHON
+          value: /data/conda_envs/promoter_tools/bin/python
         # The Promoter Calculator wrapper expects this command to write a TSV
         # containing either `sequence_id,predicted_strength` columns or common
         # aliases such as `id,strength`.

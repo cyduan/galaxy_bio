@@ -5,7 +5,7 @@
     <requirement type="package">biopython</requirement>
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
-python '$__tool_directory__/promoter_window_normalizer.py'
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_window_normalizer.py'
   --input-fasta '$input_fasta'
   --output-fasta 'normalized_promoters.fasta'
   --report-tsv 'normalization_report.tsv'
@@ -55,4 +55,3 @@ style input window from -60 to +20, where the +1 TSS is base 61.
   ]]></help>
   <citations />
 </tool>
-

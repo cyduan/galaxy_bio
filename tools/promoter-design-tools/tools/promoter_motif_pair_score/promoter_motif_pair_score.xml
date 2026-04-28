@@ -7,7 +7,7 @@
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
 #set $strict_arg = "--strict" if $strict else ""
-python '$__tool_directory__/promoter_motif_pair_score.py'
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_motif_pair_score.py'
   --motif-hits '$motif_hits'
   --promoters-fasta '$promoters_fasta'
   --output-tsv 'promoter_conservation.tsv'
@@ -57,4 +57,3 @@ the two motif scores plus spacer quality.
   ]]></help>
   <citations />
 </tool>
-

@@ -12,7 +12,7 @@
 #set $avoid_stop_arg = "--avoid-stop-codons" if $avoid_stop_codons else ""
 #set $custom_start_arg = "--custom-start '%s'" % $custom_start if str($custom_start) not in ["", "None"] else ""
 #set $custom_end_arg = "--custom-end '%s'" % $custom_end if str($custom_end) not in ["", "None"] else ""
-python '$__tool_directory__/promoter_random_mutagenesis.py'
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_random_mutagenesis.py'
   --input-fasta '$input_fasta'
   $conservation_arg
   --output-fasta 'mutants.fasta'
@@ -87,4 +87,3 @@ use the conservation TSV produced by Promoter Motif Pair Score.
   ]]></help>
   <citations />
 </tool>
-
