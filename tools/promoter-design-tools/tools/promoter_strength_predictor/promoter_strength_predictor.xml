@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="promoter_strength_predictor" name="Promoter Strength Predictor" version="0.1.1" profile="24.0">
+  <description>predict relative promoter strength with a heuristic or external adapter</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">biopython</requirement>
+    <requirement type="package">pandas</requirement>
+    <requirement type="package">numpy</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+\${PROMOTER_TOOLS_PYTHON:-python} '$__tool_directory__/promoter_strength_predictor.py'
+  --input-fasta '$input_fasta'
+  --output-tsv 'promoter_strength.tsv'
+  --log 'run_log.txt'
+  --backend '$backend'
+  --organism '$organism'
+  --tss-offset '$tss_offset'
+  --threads '$threads'
+  ]]></command>
+  <inputs>
+    <param name="input_fasta" type="data" format="fasta" label="Promoter FASTA" />
+    <param name="backend" type="select" label="Prediction backend">
+      <option value="heuristic" selected="true">Heuristic relative score</option>
+      <option value="promoter_calculator">External Promoter Calculator adapter</option>
+    </param>
+    <param name="organism" type="text" value="Escherichia_coli" label="Organism" />
+    <param name="tss_offset" type="integer" value="60" min="0" label="TSS offset" />
+    <param name="threads" type="integer" value="1" min="1" label="Threads" />
+  </inputs>
+  <outputs>
+    <data name="strength_tsv" format="tabular" from_work_dir="promoter_strength.tsv" label="${tool.name} on ${on_string}: promoter strength" />
+    <data name="run_log" format="txt" from_work_dir="run_log.txt" label="${tool.name} on ${on_string}: run log" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="2">
+      <param name="input_fasta" value="example_promoters.fasta" />
+      <output name="strength_tsv">
+        <assert_contents>
+          <has_text text="predicted_strength" />
+          <has_text text="heuristic_sigma70" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+用途
+----
+
+本工具用于预测 promoter 的相对强度。默认使用内置 heuristic 后端，不依赖外部模型，适合在启动子设计 workflow 中快速筛选候选突变体。
+
+输入
+----
+
+**Promoter FASTA**
+  输入 promoter FASTA。可以是 WT promoter，也可以是 Promoter Random Mutagenesis 生成的 mutants.fasta。
+
+参数说明
+--------
+
+**Prediction backend**
+  预测后端。
+
+  Heuristic relative score：内置启发式相对评分，默认选项。
+
+  External Promoter Calculator adapter：调用外部 Promoter Calculator。服务器需要先安装 Promoter Calculator，并在 Galaxy 的 `config/job_conf.yml` 中配置 `PROMOTER_CALCULATOR_COMMAND` 环境变量。
+
+**Organism**
+  物种名称，默认 `Escherichia_coli`。当前 heuristic 后端主要用于记录和兼容外部后端；Promoter Calculator 后端可能使用该参数。
+
+**TSS offset**
+  TSS 在 promoter window 中的 0-based 位置，默认 60。也就是默认输入为 -60 到 +20 时，第 61 个碱基是 +1。
+
+**Threads**
+  外部 Promoter Calculator 后端可使用的线程数。heuristic 后端通常不需要多线程。
+
+评分说明
+--------
+
+heuristic 后端综合考虑：
+
+- -35 motif 匹配程度。
+- -10 motif 匹配程度。
+- spacer 是否接近 17 bp。
+- promoter 整体 GC content。
+- -10 附近 AT-rich 程度。
+
+输出
+----
+
+**promoter_strength.tsv**
+  强度预测表，包含 `sequence_id`、`predicted_strength`、`log10_strength`、`backend`、`model_version` 和 `warning`。
+
+**run_log.txt**
+  运行日志。
+
+注意事项
+--------
+
+- heuristic 后端输出的是相对筛选分数，不是真实转录起始率。
+- 如果使用 Promoter Calculator 后端，必须先在服务器配置好外部命令。
+- `predicted_strength` 可用于同一批设计内排序，但不建议跨不同模型或不同 promoter window 定义直接比较。
+  ]]></help>
+  <citations />
+</tool>

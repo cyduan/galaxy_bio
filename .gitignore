@@ -199,5 +199,6 @@ involucro
 .DS_Store
 *.rej
 *~
-promoter_strength_*/
+# Temporary Promoter Calculator output directories created at the repository root.
+/promoter_strength_*/
 protein_sol_external_output/
