@@ -10,6 +10,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import uuid
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -103,23 +104,80 @@ def find_dssp_binary(explicit: str = "") -> str:
     raise RuntimeError("Could not find mkdssp. Set DSSP_BINARY or install dssp in the Galaxy job environment.")
 
 
+def detect_structure_format(path: Path) -> str:
+    """Return pdb, mmcif, or unknown using file content rather than Galaxy's .dat suffix."""
+    for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:200]:
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("data_") or line.startswith("loop_") or line.startswith("_"):
+            return "mmcif"
+        if raw_line.startswith(("HEADER", "TITLE ", "CRYST1", "MODEL ", "ATOM  ", "HETATM", "TER", "END")):
+            return "pdb"
+    return "unknown"
+
+
+def pdb_text_with_default_cryst1(path: Path) -> str:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if "CRYST1" in text[:2000]:
+        return text
+    # mkdssp is stricter than many visualization tools. A placeholder CRYST1
+    # keeps simple/model PDB files readable without changing atom coordinates.
+    cryst1 = "CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1\n"
+    return cryst1 + text
+
+
+def prepare_structure_for_dssp(input_structure: Path, work_dir: Path) -> tuple[Path, str]:
+    structure_format = detect_structure_format(input_structure)
+    if structure_format == "mmcif":
+        prepared = work_dir / "input_structure.cif"
+        shutil.copyfile(input_structure, prepared)
+        return prepared, structure_format
+    if structure_format == "pdb":
+        prepared = work_dir / "input_structure.pdb"
+        prepared.write_text(pdb_text_with_default_cryst1(input_structure), encoding="utf-8")
+        return prepared, structure_format
+    # If the format is ambiguous, use a .pdb suffix first. Most Galaxy uploads
+    # for this tool are PDB files stored internally as extensionless .dat files.
+    prepared = work_dir / "input_structure.pdb"
+    prepared.write_text(pdb_text_with_default_cryst1(input_structure), encoding="utf-8")
+    return prepared, structure_format
+
+
+def convert_mmcif_to_pdb(mmcif_path: Path, pdb_path: Path) -> Path:
+    try:
+        from Bio.PDB import MMCIFParser, PDBIO
+    except ImportError as exc:
+        raise RuntimeError(
+            "DSSP could not read this mmCIF directly, and Biopython is not available for mmCIF-to-PDB fallback."
+        ) from exc
+
+    parser = MMCIFParser(QUIET=True)
+    structure = parser.get_structure(mmcif_path.stem, str(mmcif_path))
+    writer = PDBIO()
+    writer.set_structure(structure)
+    writer.save(str(pdb_path))
+    pdb_path.write_text(pdb_text_with_default_cryst1(pdb_path), encoding="utf-8")
+    return pdb_path
+
+
 def run_dssp(dssp_binary: str, input_structure: Path, dssp_output: Path) -> tuple[list[str], str]:
     base_command = command_parts(dssp_binary)
     attempts = [
-        base_command + ["--output-format=dssp", str(input_structure), str(dssp_output)],
+        base_command + ["--output-format", "dssp", str(input_structure), str(dssp_output)],
         base_command + [str(input_structure), str(dssp_output)],
     ]
-    last_error = ""
+    errors: list[str] = []
     for command in attempts:
         completed = subprocess.run(command, capture_output=True, text=True)
         if completed.returncode == 0 and dssp_output.exists() and dssp_output.stat().st_size > 0:
             return command, completed.stderr.strip()
-        last_error = (
+        errors.append(
             f"Command: {' '.join(command)}\n"
             f"Exit code: {completed.returncode}\n"
             f"STDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
         )
-    raise RuntimeError(f"DSSP/mkdssp failed.\n{last_error}")
+    raise RuntimeError("DSSP/mkdssp failed.\n" + "\n\n".join(errors))
 
 
 def parse_float(text: str) -> str:
@@ -349,12 +407,32 @@ def write_report(
 
 def main() -> int:
     args = parse_args()
+    work_dir = Path.cwd() / f"structure_quality_tmp_{uuid.uuid4().hex}"
     try:
         input_structure = Path(args.input_structure)
+        work_dir.mkdir(parents=True, exist_ok=False)
+        dssp_input, detected_format = prepare_structure_for_dssp(input_structure, work_dir)
         dssp_output = Path(args.dssp_output)
         dssp_binary = find_dssp_binary(args.dssp_binary)
-        dssp_command, dssp_stderr = run_dssp(dssp_binary, input_structure, dssp_output)
-        b_factors = parse_pdb_b_factors(input_structure)
+        try:
+            dssp_command, dssp_stderr = run_dssp(dssp_binary, dssp_input, dssp_output)
+        except RuntimeError as first_error:
+            if detected_format != "mmcif":
+                raise
+            fallback_pdb = work_dir / "input_structure_from_mmcif.pdb"
+            try:
+                convert_mmcif_to_pdb(dssp_input, fallback_pdb)
+                dssp_command, dssp_stderr = run_dssp(dssp_binary, fallback_pdb, dssp_output)
+                dssp_stderr = (
+                    "DSSP failed on the original mmCIF, so the wrapper converted coordinates to PDB and retried.\n"
+                    f"Original DSSP error:\n{first_error}\n\n{dssp_stderr}"
+                ).strip()
+                dssp_input = fallback_pdb
+            except Exception as fallback_error:
+                raise RuntimeError(
+                    f"{first_error}\n\nmmCIF-to-PDB fallback also failed:\n{fallback_error}"
+                ) from fallback_error
+        b_factors = parse_pdb_b_factors(dssp_input)
         features = parse_dssp(
             dssp_output,
             structure_id=input_structure.stem,
@@ -369,6 +447,8 @@ def main() -> int:
     except Exception as exc:
         print(f"structure_quality_annotator: {exc}", file=sys.stderr)
         return 1
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
