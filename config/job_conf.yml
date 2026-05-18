@@ -73,6 +73,21 @@ execution:
         - name: PROTEINSOL_COMMAND
           value: /data/tools/protein-sol/run_protein_sol.sh {input_fasta} {output_dir}
 
+    hotspot_wizard_local:
+      runner: local
+      env:
+        # Shared environment for the HotSpot Wizard-like semi-rational protein
+        # engineering workflow. Tool 2 uses DSSP/mkdssp; later steps can reuse
+        # this env for FreeSASA, MAFFT/MUSCLE, CD-HIT/MMseqs2, and pocket tools.
+        - name: PATH
+          value: /data/conda_envs/hotspot_wizard/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: HOTSPOT_WIZARD_PYTHON
+          value: /data/conda_envs/hotspot_wizard/bin/python
+        - name: DSSP_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/mkdssp
+        - name: MKDSSP_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/mkdssp
+
     promoter_design_local:
       runner: local
       env:
@@ -166,6 +181,8 @@ tools:
   environment: foundry_local
 - id: foundry_mpnn
   environment: foundry_local
+- id: structure_quality_annotator
+  environment: hotspot_wizard_local
 - id: promoter_window_normalizer
   environment: promoter_design_local
 - id: promoter_motif_scanner
