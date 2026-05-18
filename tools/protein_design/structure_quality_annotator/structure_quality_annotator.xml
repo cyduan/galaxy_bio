@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="structure_quality_annotator" name="Structure Quality Annotator" version="0.1.0" profile="24.0">
+    <description>annotate secondary structure, solvent exposure, and residue-level quality features with DSSP</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+        <requirement type="package">dssp</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_structure_quality_annotator.py'
+  --input-structure '$structure'
+  --residue-features 'residue_structure_features.tsv'
+  --quality-report 'quality_report.html'
+  --dssp-output 'structure.dssp'
+  --dssp-binary "\${DSSP_BINARY:-mkdssp}"
+  --buried-threshold '$buried_threshold'
+  --exposed-threshold '$exposed_threshold'
+  --b-factor-warning '$b_factor_warning'
+    ]]></command>
+    <inputs>
+        <param name="structure" type="data" format="pdb,cif,mmcif" label="Protein structure PDB/mmCIF"
+            help="Prepared protein structure from Tool 1, uploaded PDB/mmCIF, AlphaFold/ESMFold/ColabFold output, or another structure source." />
+        <param name="buried_threshold" type="float" value="0.09" min="0" max="1" label="Buried relative ASA threshold"
+            help="Residues below this relative ASA are marked as buried. Default 0.09." />
+        <param name="exposed_threshold" type="float" value="0.36" min="0" max="1.5" label="Exposed relative ASA threshold"
+            help="Residues at or above this relative ASA are marked as exposed. Values between buried and exposed are intermediate." />
+        <param name="b_factor_warning" type="float" value="70.0" min="0" label="High B-factor warning threshold"
+            help="For PDB files, residues with average B-factor at or above this value are flagged as high_b_factor. For AlphaFold-style PDBs, B-factor often stores pLDDT, so interpret this threshold according to your structure source." />
+    </inputs>
+    <outputs>
+        <data name="residue_features" format="tabular" from_work_dir="residue_structure_features.tsv"
+            label="${tool.name} on ${on_string}: residue structure features" />
+        <data name="quality_report" format="html" from_work_dir="quality_report.html"
+            label="${tool.name} on ${on_string}: quality report" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="structure" value="mini_protein.pdb" />
+            <output name="residue_features">
+                <assert_contents>
+                    <has_text text="residue_id" />
+                    <has_text text="secondary_structure_class" />
+                    <has_text text="relative_asa" />
+                </assert_contents>
+            </output>
+            <output name="quality_report">
+                <assert_contents>
+                    <has_text text="Structure Quality Annotator Report" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途
+----
+
+本工具是 HotSpot Wizard-like 半理性蛋白改造流程的 Tool 2，用于对结构进行残基级二级结构、溶剂暴露度和基础质量特征标注。
+
+主要外部工具
+------------
+
+**DSSP / mkdssp**
+  根据 PDB/mmCIF 原子坐标计算二级结构、ASA、phi/psi 等结构特征。Galaxy 环境中应配置 `DSSP_BINARY`，例如 `/data/conda_envs/hotspot_wizard/bin/mkdssp`。
+
+输入
+----
+
+**Protein structure PDB/mmCIF**
+  来自 Tool 1 的标准化结构、用户上传 PDB/mmCIF、AlphaFold/ESMFold/ColabFold 输出，或其他结构来源。
+
+参数说明
+--------
+
+**Buried relative ASA threshold**
+  相对 ASA 低于该阈值时标记为 `buried`。默认 0.09。
+
+**Exposed relative ASA threshold**
+  相对 ASA 高于或等于该阈值时标记为 `exposed`。两者之间标记为 `intermediate`。默认 0.36。
+
+**High B-factor warning threshold**
+  对 PDB 文件，会按残基平均 B-factor 标记 `high_b_factor`。如果结构来自 AlphaFold/ESMFold，B-factor 列常常存放 pLDDT 或置信度分数，需要结合来源解释。
+
+输出
+----
+
+**residue_structure_features.tsv**
+  每个残基一行，包含 chain、residue number、amino acid、DSSP 二级结构、结构类别、ASA、relative ASA、暴露分类、phi/psi、平均 B-factor 和质量标记。
+
+**quality_report.html**
+  HTML 概览报告，统计残基数、二级结构组成、暴露度分布和质量标记，并展示前 50 个残基。
+
+注意事项
+--------
+
+- 该工具不直接判断“结构是否一定可用于设计”，而是为后续 hotspot ranking 提供结构特征。
+- 低质量区域、缺失区域、极端 B-factor/pLDDT 区域应在后续突变设计中谨慎处理。
+- DSSP 对 PDB 格式较严格。如果 PDB 报格式问题，可以优先使用 mmCIF，或在 Tool 1 中进行结构标准化。
+    ]]></help>
+    <citations />
+</tool>

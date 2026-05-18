@@ -22,6 +22,7 @@
     <tool file="structure_prediction/esmfold/esmfold_batch.xml" />
   </section>
   <section id="protein_design" name="Protein Design">
+    <tool file="protein_design/structure_quality_annotator/structure_quality_annotator.xml" />
     <tool file="protein_design/rfd3_design/rfd3_design.xml" />
     <tool file="protein_design/foundry_mpnn/foundry_mpnn.xml" />
   </section>
