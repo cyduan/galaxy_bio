@@ -26,6 +26,10 @@ galaxy:
   interactivetools_map: database/interactivetools_map.sqlite
   outputs_to_working_directory: true
 
+  # Keep global HTML sanitization enabled, but allow trusted local report tools
+  # to render their generated HTML outputs in the Galaxy display panel.
+  sanitize_allowlist_file: sanitize_allowlist.txt
+
   # Dynamic host IP keeps the repository free of hard-coded addresses. For a
   # stable public deployment, replace ${HOST_IP} with your DDNS name or FQDN.
   galaxy_infrastructure_url: http://${HOST_IP}:2718

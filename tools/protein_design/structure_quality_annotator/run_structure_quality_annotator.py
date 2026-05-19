@@ -215,6 +215,34 @@ def convert_mmcif_to_pdb(mmcif_path: Path, pdb_path: Path) -> Path:
     return pdb_path
 
 
+def convert_pdb_to_clean_pdb(input_pdb: Path, output_pdb: Path) -> Path:
+    """Rewrite a PDB through Biopython, falling back to coordinate-line extraction.
+
+    Some RCSB PDB downloads contain large or unusual headers that are valid
+    enough for viewers but rejected by mkdssp. DSSP only needs coordinates, so
+    this fallback intentionally drops most metadata.
+    """
+    try:
+        from Bio.PDB import PDBIO, PDBParser
+
+        parser = PDBParser(QUIET=True, PERMISSIVE=True)
+        structure = parser.get_structure(input_pdb.stem, str(input_pdb))
+        writer = PDBIO()
+        writer.set_structure(structure)
+        writer.save(str(output_pdb))
+    except Exception:
+        coordinate_lines = []
+        for raw_line in input_pdb.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = raw_line.lstrip("\ufeff").lstrip()
+            if line.startswith(("ATOM  ", "HETATM", "TER", "END")):
+                coordinate_lines.append(line)
+        if not any(line.startswith(("ATOM  ", "HETATM")) for line in coordinate_lines):
+            raise RuntimeError("Could not extract any ATOM/HETATM coordinate records from the PDB file.")
+        output_pdb.write_text("\n".join(coordinate_lines) + "\n", encoding="utf-8")
+    output_pdb.write_text(pdb_text_with_default_cryst1(output_pdb), encoding="utf-8")
+    return output_pdb
+
+
 def run_dssp(dssp_binary: str, input_structure: Path, dssp_output: Path) -> tuple[list[str], str]:
     base_command = command_parts(dssp_binary)
     attempts = [
@@ -471,20 +499,23 @@ def main() -> int:
         try:
             dssp_command, dssp_stderr = run_dssp(dssp_binary, dssp_input, dssp_output)
         except RuntimeError as first_error:
-            if detected_format != "mmcif":
-                raise
-            fallback_pdb = work_dir / "input_structure_from_mmcif.pdb"
+            fallback_pdb = work_dir / "input_structure_coordinates_only.pdb"
             try:
-                convert_mmcif_to_pdb(dssp_input, fallback_pdb)
+                if detected_format == "mmcif":
+                    convert_mmcif_to_pdb(dssp_input, fallback_pdb)
+                    fallback_note = "DSSP failed on the original mmCIF, so the wrapper converted coordinates to PDB and retried."
+                else:
+                    convert_pdb_to_clean_pdb(dssp_input, fallback_pdb)
+                    fallback_note = "DSSP failed on the original PDB, so the wrapper rewrote coordinate records to a clean PDB and retried."
                 dssp_command, dssp_stderr = run_dssp(dssp_binary, fallback_pdb, dssp_output)
                 dssp_stderr = (
-                    "DSSP failed on the original mmCIF, so the wrapper converted coordinates to PDB and retried.\n"
+                    f"{fallback_note}\n"
                     f"Original DSSP error:\n{first_error}\n\n{dssp_stderr}"
                 ).strip()
                 dssp_input = fallback_pdb
             except Exception as fallback_error:
                 raise RuntimeError(
-                    f"{first_error}\n\nmmCIF-to-PDB fallback also failed:\n{fallback_error}"
+                    f"{first_error}\n\nCoordinate-only PDB fallback also failed:\n{fallback_error}"
                 ) from fallback_error
         b_factors = parse_pdb_b_factors(dssp_input)
         features = parse_dssp(
