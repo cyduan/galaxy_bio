@@ -1,10 +1,13 @@
 # Protein Analysis Tools
 
-This directory contains two Galaxy tools:
+This directory contains Galaxy tools for sequence-level and structure-level
+protein analysis:
 
 - `ProtParam`: computes physicochemical properties from FASTA records.
 - `Protein-Sol`: reports solubility-related sequence features and can delegate
   to a configured local Protein-Sol command.
+- `Structure Quality Annotator`: calls DSSP/mkdssp and optionally FreeSASA to
+  report residue-level secondary structure, solvent exposure, and quality flags.
 
 ## ProtParam install and checks
 
@@ -55,3 +58,42 @@ ls -lh /data/test/protein_sol_selftest/out
 If no local official Protein-Sol package is configured, the Galaxy tool still
 returns an offline feature table. That table is useful for triage, but it is not
 the official QuerySol score.
+
+## Structure Quality Annotator install and checks
+
+Install DSSP and FreeSASA into the shared HotSpot Wizard environment:
+
+```bash
+conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge dssp freesasa-c biopython
+```
+
+Check DSSP:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/mkdssp --help
+```
+
+Check FreeSASA. Some conda builds do not support `--output-depth=residue`, so
+the Galaxy wrapper uses RSA output as a compatible fallback:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/freesasa \
+  --format=rsa \
+  /data/test/dssp_selftest/input.pdb \
+  > /data/test/dssp_selftest/freesasa.rsa
+```
+
+Run the full wrapper:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/python \
+  /data/tools/galaxy_bio/tools/protein_analysis/structure_quality_annotator/run_structure_quality_annotator.py \
+  --input-structure /data/test/dssp_selftest/input.pdb \
+  --residue-features /data/test/dssp_selftest/residue_structure_features.tsv \
+  --quality-report /data/test/dssp_selftest/quality_report.html \
+  --dssp-output /data/test/dssp_selftest/output.dssp \
+  --dssp-binary /data/conda_envs/hotspot_wizard/bin/mkdssp \
+  --run-freesasa \
+  --freesasa-output /data/test/dssp_selftest/freesasa.rsa \
+  --freesasa-binary /data/conda_envs/hotspot_wizard/bin/freesasa
+```

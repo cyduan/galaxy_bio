@@ -1,6 +1,6 @@
 # Structure Quality Annotator
 
-Galaxy Tool 2 for a HotSpot Wizard-like semi-rational protein engineering workflow.
+Galaxy protein-analysis tool for residue-level structural annotation.
 
 The tool calls `mkdssp` and, by default, `freesasa` to annotate each residue with:
 
@@ -16,7 +16,7 @@ The tool calls `mkdssp` and, by default, `freesasa` to annotate each residue wit
 
 ## Server Environment
 
-Install DSSP into the shared HotSpot Wizard environment:
+Install DSSP and FreeSASA into the shared HotSpot Wizard environment:
 
 ```bash
 conda create -p /data/conda_envs/hotspot_wizard -y \
@@ -24,7 +24,7 @@ conda create -p /data/conda_envs/hotspot_wizard -y \
   python=3.11 dssp freesasa-c biopython pandas numpy matplotlib
 ```
 
-Or add DSSP and FreeSASA to an existing environment:
+Or add them to an existing environment:
 
 ```bash
 conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge dssp freesasa-c biopython
@@ -41,7 +41,7 @@ FREESASA_BINARY: /data/conda_envs/hotspot_wizard/bin/freesasa
 
 ```bash
 /data/conda_envs/hotspot_wizard/bin/python \
-  /data/tools/galaxy_bio/tools/protein_design/structure_quality_annotator/run_structure_quality_annotator.py \
+  /data/tools/galaxy_bio/tools/protein_analysis/structure_quality_annotator/run_structure_quality_annotator.py \
   --input-structure /data/test/dssp_selftest/input.pdb \
   --residue-features /data/test/dssp_selftest/residue_structure_features.tsv \
   --quality-report /data/test/dssp_selftest/quality_report.html \
@@ -63,7 +63,7 @@ To test FreeSASA alone on older CLI builds, use RSA output:
 
 ## Galaxy
 
-After installing DSSP, restart Galaxy:
+After installing DSSP/FreeSASA, restart Galaxy:
 
 ```bash
 cd /data/tools/galaxy_bio
@@ -71,4 +71,5 @@ cd /data/tools/galaxy_bio
 ./run.sh --daemon
 ```
 
-The tool appears under `Protein Design` as `Structure Quality Annotator`.
+The tool appears under `Protein Analysis` as `Structure Quality Annotator`.
+FreeSASA is enabled by the `Run FreeSASA residue SASA calculation` checkbox.
