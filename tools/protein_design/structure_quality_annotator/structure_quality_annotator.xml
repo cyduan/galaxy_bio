@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<tool id="structure_quality_annotator" name="Structure Quality Annotator" version="0.1.0" profile="24.0">
-    <description>annotate secondary structure, solvent exposure, and residue-level quality features with DSSP</description>
+<tool id="structure_quality_annotator" name="Structure Quality Annotator" version="0.2.0" profile="24.0">
+    <description>annotate secondary structure, solvent exposure, and residue-level quality features with DSSP and FreeSASA</description>
     <requirements>
         <requirement type="package">python</requirement>
         <requirement type="package">dssp</requirement>
+        <requirement type="package">freesasa-c</requirement>
+        <requirement type="package">biopython</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
 \${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_structure_quality_annotator.py'
@@ -12,6 +14,11 @@
   --quality-report 'quality_report.html'
   --dssp-output 'structure.dssp'
   --dssp-binary "\${DSSP_BINARY:-mkdssp}"
+#if str($run_freesasa) == "true":
+  --run-freesasa
+  --freesasa-output 'freesasa.json'
+  --freesasa-binary "\${FREESASA_BINARY:-freesasa}"
+#end if
   --buried-threshold '$buried_threshold'
   --exposed-threshold '$exposed_threshold'
   --b-factor-warning '$b_factor_warning'
@@ -19,6 +26,9 @@
     <inputs>
         <param name="structure" type="data" format="pdb,cif,mmcif" label="Protein structure PDB/mmCIF"
             help="Prepared protein structure from Tool 1, uploaded PDB/mmCIF, AlphaFold/ESMFold/ColabFold output, or another structure source." />
+        <param name="run_freesasa" type="boolean" checked="true" truevalue="true" falsevalue="false"
+            label="Run FreeSASA residue SASA calculation"
+            help="Recommended. FreeSASA provides robust residue-level solvent-accessible surface area for hotspot filtering." />
         <param name="buried_threshold" type="float" value="0.09" min="0" max="1" label="Buried relative ASA threshold"
             help="Residues below this relative ASA are marked as buried. Default 0.09." />
         <param name="exposed_threshold" type="float" value="0.36" min="0" max="1.5" label="Exposed relative ASA threshold"
@@ -35,11 +45,13 @@
     <tests>
         <test expect_num_outputs="2">
             <param name="structure" value="mini_protein.pdb" />
+            <param name="run_freesasa" value="false" />
             <output name="residue_features">
                 <assert_contents>
                     <has_text text="residue_id" />
                     <has_text text="secondary_structure_class" />
                     <has_text text="relative_asa" />
+                    <has_text text="freesasa_total_asa" />
                 </assert_contents>
             </output>
             <output name="quality_report">
@@ -59,7 +71,10 @@
 ------------
 
 **DSSP / mkdssp**
-  根据 PDB/mmCIF 原子坐标计算二级结构、ASA、phi/psi 等结构特征。Galaxy 环境中应配置 `DSSP_BINARY`，例如 `/data/conda_envs/hotspot_wizard/bin/mkdssp`。
+  根据 PDB/mmCIF 原子坐标计算二级结构、DSSP ASA、phi/psi 等结构特征。Galaxy 环境中应配置 `DSSP_BINARY`，例如 `/data/conda_envs/hotspot_wizard/bin/mkdssp`。
+
+**FreeSASA**
+  计算残基级 solvent-accessible surface area。相比 DSSP ASA，FreeSASA 更适合作为后续 hotspot ranking 中“暴露/埋藏”的主要特征。Galaxy 环境中应配置 `FREESASA_BINARY`，例如 `/data/conda_envs/hotspot_wizard/bin/freesasa`。
 
 输入
 ----
@@ -69,6 +84,9 @@
 
 参数说明
 --------
+
+**Run FreeSASA residue SASA calculation**
+  是否运行 FreeSASA。默认开启。若服务器暂未安装 FreeSASA，可临时关闭该项，仅使用 DSSP 特征。
 
 **Buried relative ASA threshold**
   相对 ASA 低于该阈值时标记为 `buried`。默认 0.09。
@@ -83,17 +101,18 @@
 ----
 
 **residue_structure_features.tsv**
-  每个残基一行，包含 chain、residue number、amino acid、DSSP 二级结构、结构类别、ASA、relative ASA、暴露分类、phi/psi、平均 B-factor 和质量标记。
+  每个残基一行，包含 chain、residue number、amino acid、DSSP 二级结构、结构类别、DSSP ASA、FreeSASA total/relative ASA、主链/侧链 ASA、极性/非极性 ASA、暴露分类、phi/psi、平均 B-factor 和质量标记。
 
 **quality_report.html**
-  HTML 概览报告，统计残基数、二级结构组成、暴露度分布和质量标记，并展示前 50 个残基。
+  HTML 概览报告，统计残基数、二级结构组成、DSSP/FreeSASA 暴露度分布和质量标记，并展示前 50 个残基。
 
 注意事项
 --------
 
+- 后续 hotspot 识别时，建议优先使用 `freesasa_relative_asa` 和 `freesasa_exposure_class` 判断残基暴露度。
 - 该工具不直接判断“结构是否一定可用于设计”，而是为后续 hotspot ranking 提供结构特征。
 - 低质量区域、缺失区域、极端 B-factor/pLDDT 区域应在后续突变设计中谨慎处理。
-- DSSP 对 PDB 格式较严格。如果 PDB 报格式问题，可以优先使用 mmCIF，或在 Tool 1 中进行结构标准化。
+- DSSP 对 PDB 格式较严格。本 wrapper 会尝试清理 PDB/mmCIF 元数据并保留坐标后重试。
     ]]></help>
     <citations />
 </tool>

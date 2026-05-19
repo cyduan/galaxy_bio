@@ -4,8 +4,10 @@ from __future__ import annotations
 import argparse
 import csv
 import html
+import json
 import math
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -66,6 +68,13 @@ class ResidueFeature:
     asa: str
     relative_asa: str
     exposure_class: str
+    freesasa_total_asa: str
+    freesasa_relative_asa: str
+    freesasa_exposure_class: str
+    freesasa_main_chain_asa: str
+    freesasa_side_chain_asa: str
+    freesasa_polar_asa: str
+    freesasa_apolar_asa: str
     phi: str
     psi: str
     avg_b_factor: str
@@ -81,6 +90,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--quality-report", required=True, help="Output HTML quality report.")
     parser.add_argument("--dssp-output", default="structure.dssp", help="Intermediate raw DSSP output.")
     parser.add_argument("--dssp-binary", default="", help="Path or command for mkdssp.")
+    parser.add_argument("--run-freesasa", action="store_true", help="Also calculate residue SASA with FreeSASA.")
+    parser.add_argument("--freesasa-output", default="freesasa.json", help="Intermediate raw FreeSASA JSON output.")
+    parser.add_argument("--freesasa-binary", default="", help="Path or command for freesasa.")
     parser.add_argument("--buried-threshold", type=float, default=0.09)
     parser.add_argument("--exposed-threshold", type=float, default=0.36)
     parser.add_argument("--b-factor-warning", type=float, default=70.0)
@@ -102,6 +114,18 @@ def find_dssp_binary(explicit: str = "") -> str:
         if candidate and str(candidate).strip():
             return str(candidate).strip()
     raise RuntimeError("Could not find mkdssp. Set DSSP_BINARY or install dssp in the Galaxy job environment.")
+
+
+def find_freesasa_binary(explicit: str = "") -> str:
+    for candidate in [
+        explicit,
+        os.environ.get("FREESASA_BINARY", ""),
+        os.environ.get("FREE_SASA_BINARY", ""),
+        shutil.which("freesasa") or "",
+    ]:
+        if candidate and str(candidate).strip():
+            return str(candidate).strip()
+    raise RuntimeError("Could not find freesasa. Set FREESASA_BINARY or install freesasa in the Galaxy job environment.")
 
 
 def detect_structure_format(path: Path) -> str:
@@ -262,6 +286,23 @@ def run_dssp(dssp_binary: str, input_structure: Path, dssp_output: Path) -> tupl
     raise RuntimeError("DSSP/mkdssp failed.\n" + "\n\n".join(errors))
 
 
+def run_freesasa(freesasa_binary: str, input_structure: Path, freesasa_output: Path) -> tuple[list[str], str]:
+    base_command = command_parts(freesasa_binary)
+    command = base_command + ["--format=json", "--output-depth=residue", str(input_structure)]
+    completed = subprocess.run(command, capture_output=True, text=True)
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "FreeSASA failed.\n"
+            f"Command: {' '.join(command)}\n"
+            f"Exit code: {completed.returncode}\n"
+            f"STDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
+        )
+    if not completed.stdout.strip():
+        raise RuntimeError("FreeSASA completed but did not produce JSON output on stdout.")
+    freesasa_output.write_text(completed.stdout, encoding="utf-8")
+    return command, completed.stderr.strip()
+
+
 def parse_float(text: str) -> str:
     text = text.strip()
     if not text:
@@ -299,6 +340,85 @@ def exposure_class(relative_asa: float | None, buried_threshold: float, exposed_
     if relative_asa >= exposed_threshold:
         return "exposed"
     return "intermediate"
+
+
+def split_residue_number(value: object) -> tuple[str, str]:
+    text = str(value).strip()
+    match = re.match(r"^(-?\d+)([A-Za-z]?)$", text)
+    if match:
+        return match.group(1), match.group(2)
+    return text, ""
+
+
+def as_float(value: object) -> float | None:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def get_nested_area(mapping: dict, *keys: str) -> float | None:
+    current: object = mapping
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+    return as_float(current)
+
+
+def parse_freesasa_json(path: Path) -> dict[tuple[str, str, str], dict[str, str]]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    residue_features: dict[tuple[str, str, str], dict[str, str]] = {}
+    result_blocks = data.get("results", [])
+    for result in result_blocks:
+        for structure in result.get("structures", []):
+            for chain in structure.get("chains", []):
+                chain_id = str(chain.get("label", "") or chain.get("name", "") or ".")
+                for residue in chain.get("residues", []):
+                    residue_number, insertion_code = split_residue_number(residue.get("number", ""))
+                    area = residue.get("area", {}) if isinstance(residue.get("area", {}), dict) else {}
+                    relative_area = residue.get("relative-area", {}) if isinstance(residue.get("relative-area", {}), dict) else {}
+                    total = get_nested_area(area, "total")
+                    relative_total_percent = get_nested_area(relative_area, "total")
+                    relative_total = relative_total_percent / 100.0 if relative_total_percent is not None else None
+                    main_chain = get_nested_area(area, "main-chain")
+                    side_chain = get_nested_area(area, "side-chain")
+                    polar = get_nested_area(area, "polar")
+                    apolar = get_nested_area(area, "apolar")
+                    residue_features[(chain_id, residue_number, insertion_code)] = {
+                        "freesasa_total_asa": str(round(total, 3)) if total is not None else "",
+                        "freesasa_relative_asa": str(round(relative_total, 4)) if relative_total is not None else "",
+                        "freesasa_main_chain_asa": str(round(main_chain, 3)) if main_chain is not None else "",
+                        "freesasa_side_chain_asa": str(round(side_chain, 3)) if side_chain is not None else "",
+                        "freesasa_polar_asa": str(round(polar, 3)) if polar is not None else "",
+                        "freesasa_apolar_asa": str(round(apolar, 3)) if apolar is not None else "",
+                    }
+    return residue_features
+
+
+def apply_freesasa_features(
+    features: list[ResidueFeature],
+    freesasa_features: dict[tuple[str, str, str], dict[str, str]],
+    buried_threshold: float,
+    exposed_threshold: float,
+) -> int:
+    matched = 0
+    for feature in features:
+        values = freesasa_features.get((feature.chain_id, feature.residue_number, feature.insertion_code))
+        if values is None:
+            continue
+        matched += 1
+        feature.freesasa_total_asa = values.get("freesasa_total_asa", "")
+        feature.freesasa_relative_asa = values.get("freesasa_relative_asa", "")
+        feature.freesasa_main_chain_asa = values.get("freesasa_main_chain_asa", "")
+        feature.freesasa_side_chain_asa = values.get("freesasa_side_chain_asa", "")
+        feature.freesasa_polar_asa = values.get("freesasa_polar_asa", "")
+        feature.freesasa_apolar_asa = values.get("freesasa_apolar_asa", "")
+        relative = as_float(feature.freesasa_relative_asa)
+        feature.freesasa_exposure_class = exposure_class(relative, buried_threshold, exposed_threshold)
+    return matched
 
 
 def parse_dssp(
@@ -365,6 +485,13 @@ def parse_dssp(
                 asa=asa_text,
                 relative_asa=rel_text,
                 exposure_class=exposure_class(rel_value, buried_threshold, exposed_threshold),
+                freesasa_total_asa="",
+                freesasa_relative_asa="",
+                freesasa_exposure_class="not_run",
+                freesasa_main_chain_asa="",
+                freesasa_side_chain_asa="",
+                freesasa_polar_asa="",
+                freesasa_apolar_asa="",
                 phi=phi,
                 psi=psi,
                 avg_b_factor=str(round(avg_b, 3)) if avg_b is not None else "",
@@ -415,10 +542,14 @@ def write_report(
     input_structure: Path,
     dssp_command: list[str],
     dssp_stderr: str,
+    freesasa_command: list[str] | None = None,
+    freesasa_stderr: str = "",
+    freesasa_matched: int = 0,
 ) -> None:
     total = len(features)
     ss_counts = Counter(feature.secondary_structure_class for feature in features)
     exposure_counts = Counter(feature.exposure_class for feature in features)
+    freesasa_exposure_counts = Counter(feature.freesasa_exposure_class for feature in features)
     flag_counts = Counter()
     for feature in features:
         for flag in feature.quality_flags.split(";"):
@@ -430,6 +561,8 @@ def write_report(
         f"<td>{html.escape(feature.secondary_structure_class)}</td>"
         f"<td>{html.escape(feature.relative_asa)}</td>"
         f"<td>{html.escape(feature.exposure_class)}</td>"
+        f"<td>{html.escape(feature.freesasa_relative_asa)}</td>"
+        f"<td>{html.escape(feature.freesasa_exposure_class)}</td>"
         f"<td>{html.escape(feature.avg_b_factor)}</td>"
         f"<td>{html.escape(feature.quality_flags)}</td></tr>"
         for feature in features[:50]
@@ -441,10 +574,22 @@ def write_report(
         f"<li>{html.escape(name)}: {count} ({pct(count, total)})</li>"
         for name, count in sorted(exposure_counts.items())
     )
+    freesasa_exposure_items = "".join(
+        f"<li>{html.escape(name)}: {count} ({pct(count, total)})</li>"
+        for name, count in sorted(freesasa_exposure_counts.items())
+    )
     flag_items = "".join(
         f"<li>{html.escape(name)}: {count} ({pct(count, total)})</li>" for name, count in sorted(flag_counts.items())
     )
     dssp_stderr_html = f"<pre>{html.escape(dssp_stderr)}</pre>" if dssp_stderr else "<p>No DSSP warnings reported.</p>"
+    if freesasa_command:
+        freesasa_html = (
+            f"<p><strong>FreeSASA command:</strong> <code>{html.escape(' '.join(freesasa_command))}</code></p>"
+            f"<p><strong>Matched residues:</strong> {freesasa_matched} / {total}</p>"
+            + (f"<pre>{html.escape(freesasa_stderr)}</pre>" if freesasa_stderr else "<p>No FreeSASA warnings reported.</p>")
+        )
+    else:
+        freesasa_html = "<p>FreeSASA was not run for this job.</p>"
 
     path.write_text(
         f"""<!doctype html>
@@ -470,13 +615,16 @@ def write_report(
     <div class="card"><h2>Residues</h2><p>{total}</p></div>
     <div class="card"><h2>Secondary Structure</h2><ul>{ss_items}</ul></div>
     <div class="card"><h2>Exposure</h2><ul>{exposure_items}</ul></div>
+    <div class="card"><h2>FreeSASA Exposure</h2><ul>{freesasa_exposure_items}</ul></div>
     <div class="card"><h2>Quality Flags</h2><ul>{flag_items}</ul></div>
   </div>
   <h2>DSSP Messages</h2>
   {dssp_stderr_html}
+  <h2>FreeSASA</h2>
+  {freesasa_html}
   <h2>First 50 Residues</h2>
   <table>
-    <thead><tr><th>Residue</th><th>AA</th><th>SS class</th><th>Relative ASA</th><th>Exposure</th><th>Avg B-factor</th><th>Flags</th></tr></thead>
+    <thead><tr><th>Residue</th><th>AA</th><th>SS class</th><th>DSSP relative ASA</th><th>DSSP exposure</th><th>FreeSASA relative ASA</th><th>FreeSASA exposure</th><th>Avg B-factor</th><th>Flags</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
   <p><em>Use the TSV output for downstream hotspot ranking. DSSP-derived exposure is useful for avoiding buried destabilizing mutations unless stability design is intended.</em></p>
@@ -526,8 +674,33 @@ def main() -> int:
             exposed_threshold=args.exposed_threshold,
             b_factor_warning=args.b_factor_warning,
         )
+        freesasa_command = None
+        freesasa_stderr = ""
+        freesasa_matched = 0
+        if args.run_freesasa:
+            freesasa_output = Path(args.freesasa_output)
+            freesasa_binary = find_freesasa_binary(args.freesasa_binary)
+            freesasa_command, freesasa_stderr = run_freesasa(freesasa_binary, dssp_input, freesasa_output)
+            freesasa_features = parse_freesasa_json(freesasa_output)
+            freesasa_matched = apply_freesasa_features(
+                features,
+                freesasa_features,
+                buried_threshold=args.buried_threshold,
+                exposed_threshold=args.exposed_threshold,
+            )
+            if freesasa_matched == 0:
+                raise RuntimeError("FreeSASA completed, but no residue-level SASA rows matched DSSP residues.")
         write_features(features, Path(args.residue_features))
-        write_report(features, Path(args.quality_report), input_structure, dssp_command, dssp_stderr)
+        write_report(
+            features,
+            Path(args.quality_report),
+            input_structure,
+            dssp_command,
+            dssp_stderr,
+            freesasa_command=freesasa_command,
+            freesasa_stderr=freesasa_stderr,
+            freesasa_matched=freesasa_matched,
+        )
         return 0
     except Exception as exc:
         print(f"structure_quality_annotator: {exc}", file=sys.stderr)

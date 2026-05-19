@@ -87,6 +87,8 @@ execution:
           value: /data/conda_envs/hotspot_wizard/bin/mkdssp
         - name: MKDSSP_BINARY
           value: /data/conda_envs/hotspot_wizard/bin/mkdssp
+        - name: FREESASA_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/freesasa
 
     promoter_design_local:
       runner: local

@@ -2,11 +2,13 @@
 
 Galaxy Tool 2 for a HotSpot Wizard-like semi-rational protein engineering workflow.
 
-The tool calls `mkdssp` to annotate each residue with:
+The tool calls `mkdssp` and, by default, `freesasa` to annotate each residue with:
 
 - DSSP secondary structure
 - coarse secondary-structure class
-- solvent-accessible surface area
+- DSSP solvent-accessible surface area
+- FreeSASA total/relative SASA
+- FreeSASA main-chain/side-chain and polar/apolar SASA
 - relative ASA and exposure class
 - phi/psi angles
 - average PDB B-factor when available
@@ -19,19 +21,20 @@ Install DSSP into the shared HotSpot Wizard environment:
 ```bash
 conda create -p /data/conda_envs/hotspot_wizard -y \
   -c conda-forge \
-  python=3.11 dssp biopython pandas numpy matplotlib
+  python=3.11 dssp freesasa-c biopython pandas numpy matplotlib
 ```
 
-Or add DSSP to an existing environment:
+Or add DSSP and FreeSASA to an existing environment:
 
 ```bash
-conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge dssp
+conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge dssp freesasa-c biopython
 ```
 
 The Galaxy job destination is configured in `config/job_conf.yml` with:
 
 ```yaml
 DSSP_BINARY: /data/conda_envs/hotspot_wizard/bin/mkdssp
+FREESASA_BINARY: /data/conda_envs/hotspot_wizard/bin/freesasa
 ```
 
 ## Command-Line Smoke Test
@@ -43,7 +46,10 @@ DSSP_BINARY: /data/conda_envs/hotspot_wizard/bin/mkdssp
   --residue-features /data/test/dssp_selftest/residue_structure_features.tsv \
   --quality-report /data/test/dssp_selftest/quality_report.html \
   --dssp-output /data/test/dssp_selftest/output.dssp \
-  --dssp-binary /data/conda_envs/hotspot_wizard/bin/mkdssp
+  --dssp-binary /data/conda_envs/hotspot_wizard/bin/mkdssp \
+  --run-freesasa \
+  --freesasa-output /data/test/dssp_selftest/freesasa.json \
+  --freesasa-binary /data/conda_envs/hotspot_wizard/bin/freesasa
 ```
 
 ## Galaxy
