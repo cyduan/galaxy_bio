@@ -91,7 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dssp-output", default="structure.dssp", help="Intermediate raw DSSP output.")
     parser.add_argument("--dssp-binary", default="", help="Path or command for mkdssp.")
     parser.add_argument("--run-freesasa", action="store_true", help="Also calculate residue SASA with FreeSASA.")
-    parser.add_argument("--freesasa-output", default="freesasa.json", help="Intermediate raw FreeSASA JSON output.")
+    parser.add_argument("--freesasa-output", default="freesasa.rsa", help="Intermediate raw FreeSASA output.")
     parser.add_argument("--freesasa-binary", default="", help="Path or command for freesasa.")
     parser.add_argument("--buried-threshold", type=float, default=0.09)
     parser.add_argument("--exposed-threshold", type=float, default=0.36)
@@ -288,19 +288,25 @@ def run_dssp(dssp_binary: str, input_structure: Path, dssp_output: Path) -> tupl
 
 def run_freesasa(freesasa_binary: str, input_structure: Path, freesasa_output: Path) -> tuple[list[str], str]:
     base_command = command_parts(freesasa_binary)
-    command = base_command + ["--format=json", "--output-depth=residue", str(input_structure)]
-    completed = subprocess.run(command, capture_output=True, text=True)
-    if completed.returncode != 0:
-        raise RuntimeError(
-            "FreeSASA failed.\n"
+    attempts = [
+        # Newer FreeSASA builds can emit residue-level JSON directly.
+        base_command + ["--format=json", "--output-depth=residue", str(input_structure)],
+        # Older conda builds commonly support NACCESS/RSA-style residue output.
+        base_command + ["--format=rsa", str(input_structure)],
+        base_command + ["-f", "rsa", str(input_structure)],
+    ]
+    errors: list[str] = []
+    for command in attempts:
+        completed = subprocess.run(command, capture_output=True, text=True)
+        if completed.returncode == 0 and completed.stdout.strip():
+            freesasa_output.write_text(completed.stdout, encoding="utf-8")
+            return command, completed.stderr.strip()
+        errors.append(
             f"Command: {' '.join(command)}\n"
             f"Exit code: {completed.returncode}\n"
             f"STDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
         )
-    if not completed.stdout.strip():
-        raise RuntimeError("FreeSASA completed but did not produce JSON output on stdout.")
-    freesasa_output.write_text(completed.stdout, encoding="utf-8")
-    return command, completed.stderr.strip()
+    raise RuntimeError("FreeSASA failed.\n" + "\n\n".join(errors))
 
 
 def parse_float(text: str) -> str:
@@ -396,6 +402,50 @@ def parse_freesasa_json(path: Path) -> dict[tuple[str, str, str], dict[str, str]
                         "freesasa_apolar_asa": str(round(apolar, 3)) if apolar is not None else "",
                     }
     return residue_features
+
+
+def parse_freesasa_rsa(path: Path) -> dict[tuple[str, str, str], dict[str, str]]:
+    """Parse NACCESS/RSA-style FreeSASA residue output.
+
+    Expected RES columns are:
+    RES, resname, chain, resnum, total_abs, total_rel,
+    side_abs, side_rel, main_abs, main_rel, apolar_abs, apolar_rel,
+    polar_abs, polar_rel.
+    Relative values are percentages in RSA output and are converted to 0-1.
+    """
+    residue_features: dict[tuple[str, str, str], dict[str, str]] = {}
+    for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("RES"):
+            continue
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+        chain_id = parts[2] if len(parts) > 2 else "."
+        residue_number, insertion_code = split_residue_number(parts[3] if len(parts) > 3 else "")
+        total = as_float(parts[4] if len(parts) > 4 else None)
+        relative_total_percent = as_float(parts[5] if len(parts) > 5 else None)
+        side_chain = as_float(parts[6] if len(parts) > 6 else None)
+        main_chain = as_float(parts[8] if len(parts) > 8 else None)
+        apolar = as_float(parts[10] if len(parts) > 10 else None)
+        polar = as_float(parts[12] if len(parts) > 12 else None)
+        relative_total = relative_total_percent / 100.0 if relative_total_percent is not None else None
+        residue_features[(chain_id, residue_number, insertion_code)] = {
+            "freesasa_total_asa": str(round(total, 3)) if total is not None else "",
+            "freesasa_relative_asa": str(round(relative_total, 4)) if relative_total is not None else "",
+            "freesasa_main_chain_asa": str(round(main_chain, 3)) if main_chain is not None else "",
+            "freesasa_side_chain_asa": str(round(side_chain, 3)) if side_chain is not None else "",
+            "freesasa_polar_asa": str(round(polar, 3)) if polar is not None else "",
+            "freesasa_apolar_asa": str(round(apolar, 3)) if apolar is not None else "",
+        }
+    return residue_features
+
+
+def parse_freesasa_output(path: Path) -> dict[tuple[str, str, str], dict[str, str]]:
+    text = path.read_text(encoding="utf-8", errors="replace").lstrip()
+    if text.startswith("{"):
+        return parse_freesasa_json(path)
+    return parse_freesasa_rsa(path)
 
 
 def apply_freesasa_features(
@@ -681,7 +731,7 @@ def main() -> int:
             freesasa_output = Path(args.freesasa_output)
             freesasa_binary = find_freesasa_binary(args.freesasa_binary)
             freesasa_command, freesasa_stderr = run_freesasa(freesasa_binary, dssp_input, freesasa_output)
-            freesasa_features = parse_freesasa_json(freesasa_output)
+            freesasa_features = parse_freesasa_output(freesasa_output)
             freesasa_matched = apply_freesasa_features(
                 features,
                 freesasa_features,

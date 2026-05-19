@@ -48,8 +48,17 @@ FREESASA_BINARY: /data/conda_envs/hotspot_wizard/bin/freesasa
   --dssp-output /data/test/dssp_selftest/output.dssp \
   --dssp-binary /data/conda_envs/hotspot_wizard/bin/mkdssp \
   --run-freesasa \
-  --freesasa-output /data/test/dssp_selftest/freesasa.json \
+  --freesasa-output /data/test/dssp_selftest/freesasa.rsa \
   --freesasa-binary /data/conda_envs/hotspot_wizard/bin/freesasa
+```
+
+To test FreeSASA alone on older CLI builds, use RSA output:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/freesasa \
+  --format=rsa \
+  /data/test/dssp_selftest/input.pdb \
+  > /data/test/dssp_selftest/freesasa.rsa
 ```
 
 ## Galaxy

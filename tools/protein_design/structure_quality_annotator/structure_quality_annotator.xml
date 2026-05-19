@@ -16,7 +16,7 @@
   --dssp-binary "\${DSSP_BINARY:-mkdssp}"
 #if str($run_freesasa) == "true":
   --run-freesasa
-  --freesasa-output 'freesasa.json'
+  --freesasa-output 'freesasa.rsa'
   --freesasa-binary "\${FREESASA_BINARY:-freesasa}"
 #end if
   --buried-threshold '$buried_threshold'
