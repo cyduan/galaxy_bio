@@ -8,6 +8,8 @@ protein analysis:
   to a configured local Protein-Sol command.
 - `Structure Quality Annotator`: calls DSSP/mkdssp and optionally FreeSASA to
   report residue-level secondary structure, solvent exposure, and quality flags.
+- `Homolog Search and MSA`: finds homologous proteins, removes redundancy, and
+  builds an MSA for conservation/back-to-consensus analysis.
 
 ## ProtParam install and checks
 
@@ -96,4 +98,26 @@ Run the full wrapper:
   --run-freesasa \
   --freesasa-output /data/test/dssp_selftest/freesasa.rsa \
   --freesasa-binary /data/conda_envs/hotspot_wizard/bin/freesasa
+```
+
+## Homolog Search and MSA install and checks
+
+Install the homology-search and MSA tools into the shared HotSpot Wizard
+environment:
+
+```bash
+conda install -p /data/conda_envs/hotspot_wizard -y \
+  -c conda-forge -c bioconda \
+  blast cd-hit mafft muscle mmseqs2
+```
+
+Check the binaries:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/blastp -version
+/data/conda_envs/hotspot_wizard/bin/makeblastdb -version
+/data/conda_envs/hotspot_wizard/bin/cd-hit -h
+/data/conda_envs/hotspot_wizard/bin/mafft --version
+/data/conda_envs/hotspot_wizard/bin/muscle -version
+/data/conda_envs/hotspot_wizard/bin/mmseqs version
 ```

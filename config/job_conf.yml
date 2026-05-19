@@ -89,6 +89,18 @@ execution:
           value: /data/conda_envs/hotspot_wizard/bin/mkdssp
         - name: FREESASA_BINARY
           value: /data/conda_envs/hotspot_wizard/bin/freesasa
+        - name: BLASTP_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/blastp
+        - name: MAKEBLASTDB_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/makeblastdb
+        - name: MMSEQS_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/mmseqs
+        - name: CDHIT_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/cd-hit
+        - name: MAFFT_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/mafft
+        - name: MUSCLE_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/muscle
 
     promoter_design_local:
       runner: local
@@ -184,6 +196,8 @@ tools:
 - id: foundry_mpnn
   environment: foundry_local
 - id: structure_quality_annotator
+  environment: hotspot_wizard_local
+- id: homolog_search_msa
   environment: hotspot_wizard_local
 - id: promoter_window_normalizer
   environment: promoter_design_local

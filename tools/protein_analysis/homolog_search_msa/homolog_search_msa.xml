@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="homolog_search_msa" name="Homolog Search and MSA" version="0.1.0" profile="24.0">
+    <description>find homologs, reduce redundancy, and build a multiple sequence alignment</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+        <requirement type="package">blast</requirement>
+        <requirement type="package">mmseqs2</requirement>
+        <requirement type="package">cd-hit</requirement>
+        <requirement type="package">mafft</requirement>
+        <requirement type="package">muscle</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_homolog_search_msa.py'
+  --query-fasta '$query_fasta'
+  --subject-fasta '$subject_fasta'
+  --homologs-fasta 'homologs.fasta'
+  --filtered-homologs-fasta 'filtered_homologs.fasta'
+  --msa-fasta 'msa.fasta'
+  --summary-tsv 'homolog_summary.tsv'
+  --raw-search-output 'raw_search.tsv'
+  --cluster-report 'cluster_report.txt'
+  --msa-log 'msa_log.txt'
+  --run-log 'run_log.txt'
+  --search-backend '$search_backend'
+  --filter-backend '$filter_backend'
+  --msa-backend '$msa_backend'
+  --evalue '$evalue'
+  --max-target-seqs '$max_target_seqs'
+  --max-homologs '$max_homologs'
+  --min-identity '$min_identity'
+  --min-query-coverage '$min_query_coverage'
+  --min-subject-coverage '$min_subject_coverage'
+  --min-alignment-length '$min_alignment_length'
+  --identity-threshold '$identity_threshold'
+  --threads '$threads'
+  --blastp-binary "\${BLASTP_BINARY:-blastp}"
+  --makeblastdb-binary "\${MAKEBLASTDB_BINARY:-makeblastdb}"
+  --mmseqs-binary "\${MMSEQS_BINARY:-mmseqs}"
+  --cdhit-binary "\${CDHIT_BINARY:-cd-hit}"
+  --mafft-binary "\${MAFFT_BINARY:-mafft}"
+  --muscle-binary "\${MUSCLE_BINARY:-muscle}"
+#if str($include_query_in_msa) == "true":
+  --include-query-in-msa
+#end if
+#if str($exclude_self_hits) == "true":
+  --exclude-self-hits
+#end if
+    ]]></command>
+    <inputs>
+        <param name="query_fasta" type="data" format="fasta" label="Query protein FASTA"
+            help="Protein sequence used as the HotSpot Wizard target sequence. One or more query records are accepted." />
+        <param name="subject_fasta" type="data" format="fasta" label="Subject/database protein FASTA"
+            help="FASTA file containing candidate homologs. For production this can be a curated organism/protein-family database; for testing it can be a small homolog set." />
+        <param name="search_backend" type="select" label="Homolog search backend">
+            <option value="blastp" selected="true">BLAST+ blastp search</option>
+            <option value="mmseqs">MMseqs2 easy-search</option>
+            <option value="all_subjects">Use all subject sequences directly (curated homolog set / testing)</option>
+        </param>
+        <param name="filter_backend" type="select" label="Redundancy filtering backend">
+            <option value="cd-hit" selected="true">CD-HIT</option>
+            <option value="mmseqs">MMseqs2 easy-cluster</option>
+            <option value="internal">Internal exact deduplication only</option>
+        </param>
+        <param name="msa_backend" type="select" label="MSA backend">
+            <option value="mafft" selected="true">MAFFT</option>
+            <option value="muscle">MUSCLE</option>
+            <option value="copy">Copy FASTA without alignment (testing/prealigned input only)</option>
+        </param>
+        <param name="evalue" type="float" value="1e-5" min="0" label="Maximum E-value" />
+        <param name="max_target_seqs" type="integer" value="500" min="1" label="Maximum targets requested from search backend" />
+        <param name="max_homologs" type="integer" value="500" min="1" label="Maximum homologs kept after search filtering" />
+        <param name="min_identity" type="float" value="20.0" min="0" max="100" label="Minimum percent identity" />
+        <param name="min_query_coverage" type="float" value="40.0" min="0" max="100" label="Minimum query coverage (%)" />
+        <param name="min_subject_coverage" type="float" value="0.0" min="0" max="100" label="Minimum subject coverage (%)" />
+        <param name="min_alignment_length" type="integer" value="20" min="1" label="Minimum alignment length" />
+        <param name="identity_threshold" type="float" value="0.9" min="0.4" max="1.0" label="Redundancy identity threshold"
+            help="For CD-HIT/MMseqs clustering. 0.9 means approximately 90% identity representatives are kept." />
+        <param name="threads" type="integer" value="1" min="1" label="Threads" />
+        <param name="include_query_in_msa" type="boolean" checked="true" truevalue="true" falsevalue="false"
+            label="Include query sequence in MSA" />
+        <param name="exclude_self_hits" type="boolean" checked="true" truevalue="true" falsevalue="false"
+            label="Exclude self hits where query id equals subject id" />
+    </inputs>
+    <outputs>
+        <data name="homologs_fasta" format="fasta" from_work_dir="homologs.fasta"
+            label="${tool.name} on ${on_string}: homologs" />
+        <data name="filtered_homologs_fasta" format="fasta" from_work_dir="filtered_homologs.fasta"
+            label="${tool.name} on ${on_string}: filtered homologs" />
+        <data name="msa_fasta" format="fasta" from_work_dir="msa.fasta"
+            label="${tool.name} on ${on_string}: MSA" />
+        <data name="summary_tsv" format="tabular" from_work_dir="homolog_summary.tsv"
+            label="${tool.name} on ${on_string}: homolog summary" />
+        <data name="raw_search_tsv" format="tabular" from_work_dir="raw_search.tsv"
+            label="${tool.name} on ${on_string}: raw search results" />
+        <data name="cluster_report" format="txt" from_work_dir="cluster_report.txt"
+            label="${tool.name} on ${on_string}: clustering report" />
+        <data name="msa_log" format="txt" from_work_dir="msa_log.txt"
+            label="${tool.name} on ${on_string}: MSA log" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="8">
+            <param name="query_fasta" value="homolog_query.fasta" ftype="fasta" />
+            <param name="subject_fasta" value="homolog_subjects.fasta" ftype="fasta" />
+            <param name="search_backend" value="all_subjects" />
+            <param name="filter_backend" value="internal" />
+            <param name="msa_backend" value="copy" />
+            <param name="include_query_in_msa" value="true" />
+            <param name="exclude_self_hits" value="false" />
+            <output name="homologs_fasta">
+                <assert_contents>
+                    <has_text text="homolog_A" />
+                    <has_text text="homolog_C" />
+                </assert_contents>
+            </output>
+            <output name="filtered_homologs_fasta">
+                <assert_contents>
+                    <has_text text="homolog_A" />
+                    <has_text text="homolog_C" />
+                </assert_contents>
+            </output>
+            <output name="msa_fasta">
+                <assert_contents>
+                    <has_text text="query_protein" />
+                    <has_text text="homolog_A" />
+                </assert_contents>
+            </output>
+            <output name="summary_tsv">
+                <assert_contents>
+                    <has_text text="sequence_id" />
+                    <has_text text="in_filtered_homologs" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白质半理性改造流程的 Tool 3：寻找同源序列并构建 MSA。它为后续保守性计算、back-to-consensus 突变、自然可接受氨基酸分布分析提供基础输入。
+
+流程逻辑
+--------
+
+1. 使用 BLAST+ `blastp` 或 MMseqs2 `easy-search` 在 subject/database FASTA 中查找同源序列。
+2. 按 E-value、identity、coverage、alignment length 等阈值筛选命中序列。
+3. 使用 CD-HIT 或 MMseqs2 cluster 去冗余，默认保留 90% identity 代表序列。
+4. 使用 MAFFT 或 MUSCLE 构建 MSA。
+
+参数说明
+--------
+
+**Query protein FASTA**
+  目标蛋白序列。通常来自 Tool 1 结构准备步骤中的目标序列，或用户上传的 FASTA。
+
+**Subject/database protein FASTA**
+  候选同源序列库。可以是小型 curated family FASTA，也可以是从 UniProt/本地数据库抽取出的蛋白 FASTA。若你已经手工准备好同源序列集合，可选择 `Use all subject sequences directly` 跳过搜索。
+
+**Homolog search backend**
+  `BLAST+ blastp search` 是默认生产路径；`MMseqs2 easy-search` 适合大规模数据库；`Use all subject sequences directly` 适合已整理同源集合或测试。
+
+**Redundancy filtering backend**
+  `CD-HIT` 是默认路径；`MMseqs2 easy-cluster` 适合大规模数据；`Internal exact deduplication only` 只去除完全相同序列，主要用于测试或很小数据集。
+
+**MSA backend**
+  推荐 MAFFT；MUSCLE 也可用。`Copy FASTA without alignment` 只用于 smoke test 或输入本来已经对齐的情况。
+
+输出说明
+--------
+
+**homologs.fasta**
+  搜索和阈值筛选后的同源序列。
+
+**filtered_homologs.fasta**
+  去冗余后的代表同源序列，是后续保守性分析的推荐输入。
+
+**msa.fasta**
+  多序列比对结果。默认包含 query sequence，方便后续按目标序列位置映射保守性。
+
+**homolog_summary.tsv**
+  每条保留同源序列的搜索命中、过滤、聚类和 MSA 状态汇总。
+
+**raw_search.tsv**
+  标准化搜索结果表，保留 BLAST/MMseqs 原始命中信息的主要字段。
+
+**cluster_report.txt**
+  CD-HIT `.clstr` 或 MMseqs cluster TSV；使用 internal 后端时为代表序列和成员列表。
+
+注意事项
+--------
+
+- 同源序列越杂，MSA 越可能质量下降；建议根据蛋白家族和任务调整 identity、coverage 和 E-value。
+- 对 back-to-consensus 设计，通常需要足够多但不过度冗余的同源序列。
+- 对低同源、重复结构域或多结构域蛋白，建议先人工检查 MSA。
+- 本工具不会自动下载 UniProt/NCBI nr；出于可复现和服务器安全考虑，数据库 FASTA 需要作为 Galaxy 数据集输入或由管理员预先准备。
+    ]]></help>
+    <citations />
+</tool>
