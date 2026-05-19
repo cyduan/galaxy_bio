@@ -107,24 +107,78 @@ def find_dssp_binary(explicit: str = "") -> str:
 def detect_structure_format(path: Path) -> str:
     """Return pdb, mmcif, or unknown using file content rather than Galaxy's .dat suffix."""
     for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines()[:200]:
-        line = raw_line.strip()
+        clean_line = raw_line.lstrip("\ufeff").lstrip()
+        line = clean_line.strip()
         if not line:
             continue
         if line.startswith("data_") or line.startswith("loop_") or line.startswith("_"):
             return "mmcif"
-        if raw_line.startswith(("HEADER", "TITLE ", "CRYST1", "MODEL ", "ATOM  ", "HETATM", "TER", "END")):
+        if clean_line.startswith(("HEADER", "TITLE ", "CRYST1", "MODEL ", "ATOM  ", "HETATM", "TER", "END")):
             return "pdb"
     return "unknown"
 
 
+def sanitize_pdb_text(text: str) -> str:
+    """Normalize common upload artifacts while preserving PDB fixed-column records."""
+    known_records = (
+        "HEADER",
+        "TITLE ",
+        "COMPND",
+        "SOURCE",
+        "KEYWDS",
+        "EXPDTA",
+        "AUTHOR",
+        "REMARK",
+        "DBREF ",
+        "SEQRES",
+        "MODRES",
+        "HET   ",
+        "HETNAM",
+        "FORMUL",
+        "HELIX ",
+        "SHEET ",
+        "SSBOND",
+        "LINK  ",
+        "SITE  ",
+        "CRYST1",
+        "ORIGX1",
+        "ORIGX2",
+        "ORIGX3",
+        "SCALE1",
+        "SCALE2",
+        "SCALE3",
+        "MODEL ",
+        "ATOM  ",
+        "HETATM",
+        "ANISOU",
+        "TER   ",
+        "ENDMDL",
+        "END   ",
+    )
+    sanitized: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.lstrip("\ufeff").rstrip("\r\n")
+        shifted = line.lstrip()
+        if any(shifted.startswith(record) for record in known_records):
+            line = shifted
+        if line.strip():
+            sanitized.append(line)
+    return "\n".join(sanitized) + "\n"
+
+
 def pdb_text_with_default_cryst1(path: Path) -> str:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    if "CRYST1" in text[:2000]:
+    text = sanitize_pdb_text(path.read_text(encoding="utf-8", errors="replace"))
+    lines = text.splitlines()
+    if any(line.startswith("CRYST1") for line in lines[:200]):
         return text
     # mkdssp is stricter than many visualization tools. A placeholder CRYST1
     # keeps simple/model PDB files readable without changing atom coordinates.
     cryst1 = "CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1\n"
-    return cryst1 + text
+    insert_after_records = ("HEADER", "TITLE ", "COMPND", "SOURCE", "KEYWDS", "EXPDTA", "AUTHOR", "REMARK")
+    insert_at = 0
+    while insert_at < len(lines) and lines[insert_at].startswith(insert_after_records):
+        insert_at += 1
+    return "\n".join(lines[:insert_at] + [cryst1.rstrip("\n")] + lines[insert_at:]) + "\n"
 
 
 def prepare_structure_for_dssp(input_structure: Path, work_dir: Path) -> tuple[Path, str]:
