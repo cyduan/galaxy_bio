@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="pocket_tunnel_finder" name="Pocket and Tunnel Finder" version="0.1.0" profile="24.0">
+    <description>detect protein pockets and cavities with fpocket for HotSpot workflows</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+        <requirement type="package">fpocket</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_pocket_tunnel_finder.py'
+  --input-pdb '$input_pdb'
+  --pockets-tsv 'pockets.tsv'
+  --tunnels-tsv 'tunnels.tsv'
+  --residue-annotation-tsv 'residue_pocket_tunnel_annotation.tsv'
+  --pocket-structure-pdb 'pocket_structure.pdb'
+  --fpocket-info 'fpocket_info.txt'
+  --raw-archive 'fpocket_raw_outputs.zip'
+  --run-log 'run_log.txt'
+  --fpocket-binary "\${FPOCKET_BINARY:-fpocket}"
+  --min-alpha-spheres '$min_alpha_spheres'
+  --top-n-pockets '$top_n_pockets'
+    ]]></command>
+    <inputs>
+        <param name="input_pdb" type="data" format="pdb" label="Input protein structure PDB"
+            help="Prepared or uploaded PDB structure. fpocket expects a standard PDB coordinate file." />
+        <param name="min_alpha_spheres" type="integer" value="0" min="0" label="Minimum alpha spheres"
+            help="Optional filter for reported pockets. 0 keeps all detected pockets." />
+        <param name="top_n_pockets" type="integer" value="0" min="0" label="Keep top N pockets"
+            help="0 keeps all detected pockets. Ranking uses fpocket score when available." />
+        <section name="outputs_to_keep" title="Outputs to keep" expanded="true">
+            <param name="keep_pockets_tsv" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Keep pockets.tsv" />
+            <param name="keep_tunnels_tsv" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Keep tunnels.tsv placeholder" />
+            <param name="keep_residue_annotation" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Keep residue_pocket_tunnel_annotation.tsv" />
+            <param name="keep_pocket_structure" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Keep pocket_structure.pdb" />
+            <param name="keep_fpocket_info" type="boolean" checked="false" truevalue="true" falsevalue="false"
+                label="Keep raw fpocket info text" />
+            <param name="keep_raw_archive" type="boolean" checked="false" truevalue="true" falsevalue="false"
+                label="Keep complete fpocket raw output ZIP" />
+            <param name="keep_run_log" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Keep run log" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="pockets_tsv" format="tabular" from_work_dir="pockets.tsv"
+            label="${tool.name} on ${on_string}: pockets">
+            <filter>outputs_to_keep['keep_pockets_tsv'] == True</filter>
+        </data>
+        <data name="tunnels_tsv" format="tabular" from_work_dir="tunnels.tsv"
+            label="${tool.name} on ${on_string}: tunnels">
+            <filter>outputs_to_keep['keep_tunnels_tsv'] == True</filter>
+        </data>
+        <data name="residue_annotation" format="tabular" from_work_dir="residue_pocket_tunnel_annotation.tsv"
+            label="${tool.name} on ${on_string}: residue pocket/tunnel annotation">
+            <filter>outputs_to_keep['keep_residue_annotation'] == True</filter>
+        </data>
+        <data name="pocket_structure" format="pdb" from_work_dir="pocket_structure.pdb"
+            label="${tool.name} on ${on_string}: pocket structure">
+            <filter>outputs_to_keep['keep_pocket_structure'] == True</filter>
+        </data>
+        <data name="fpocket_info" format="txt" from_work_dir="fpocket_info.txt"
+            label="${tool.name} on ${on_string}: fpocket info">
+            <filter>outputs_to_keep['keep_fpocket_info'] == True</filter>
+        </data>
+        <data name="raw_archive" format="zip" from_work_dir="fpocket_raw_outputs.zip"
+            label="${tool.name} on ${on_string}: fpocket raw outputs">
+            <filter>outputs_to_keep['keep_raw_archive'] == True</filter>
+        </data>
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log">
+            <filter>outputs_to_keep['keep_run_log'] == True</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="7">
+            <param name="input_pdb" value="mini_pocket_test.pdb" ftype="pdb" />
+            <param name="keep_fpocket_info" value="true" />
+            <param name="keep_raw_archive" value="true" />
+            <output name="pockets_tsv">
+                <assert_contents>
+                    <has_text text="pocket_id" />
+                </assert_contents>
+            </output>
+            <output name="tunnels_tsv">
+                <assert_contents>
+                    <has_text text="not_computed" />
+                </assert_contents>
+            </output>
+            <output name="residue_annotation">
+                <assert_contents>
+                    <has_text text="residue_id" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白质半理性改造流程的 Tool 5 第一阶段：使用 fpocket 识别蛋白表面 pocket、cavity 和潜在活性口袋，并把口袋附近残基整理成后续 hotspot ranking 可用的表格。
+
+当前版本仅集成 fpocket。CAVER 和 P2Rank 后续可继续接入同一个工具，因此目前也输出 `tunnels.tsv` 占位表，保证工作流接口稳定。
+
+输入
+----
+
+**Input protein structure PDB**
+  标准 PDB 坐标文件。可以来自结构准备工具、RCSB PDB、AlphaFold/ESMFold/ColabFold 输出或用户上传。
+
+参数说明
+--------
+
+**Minimum alpha spheres**
+  按 fpocket alpha sphere 数过滤口袋。0 表示不额外过滤。
+
+**Keep top N pockets**
+  只保留排名最高的 N 个口袋。0 表示保留全部。排序优先使用 fpocket score。
+
+**Outputs to keep**
+  根据复选框决定 Galaxy history 中保留哪些结果。HotSpot 流程推荐至少保留 `pockets.tsv`、`residue_pocket_tunnel_annotation.tsv` 和 `pocket_structure.pdb`。
+
+输出
+----
+
+**pockets.tsv**
+  HotSpot 流程主输出之一，每个 pocket 一行，包含 fpocket score、druggability score、volume、SASA、alpha sphere 数、口袋残基列表等。
+
+**tunnels.tsv**
+  当前 fpocket-only 阶段不计算 tunnel，输出占位行。后续接入 CAVER 后会填充真实通道信息。
+
+**residue_pocket_tunnel_annotation.tsv**
+  HotSpot 流程主输出之一，每个被 pocket 命中的残基一行，包含 chain、residue number、residue name、pocket ids、是否位于 tunnel 等字段。
+
+**pocket_structure.pdb**
+  fpocket 生成的 pocket structure PDB，用于结构查看和后续可视化。
+
+**fpocket raw output ZIP**
+  完整 fpocket 输出目录，便于复核和调试。
+
+注意事项
+--------
+
+- fpocket 识别的是几何 pocket/cavity，不等于真实底物通道；底物进出口通道建议后续使用 CAVER。
+- pocket 附近残基是否适合突变，还需要结合 Tool 4 的 conservation/mutability、Tool 2 的暴露度和后续稳定性预测。
+- 输入 PDB 如果缺失底物、辅因子或关键 loop，口袋结果可能明显偏离真实功能状态。
+    ]]></help>
+    <citations />
+</tool>

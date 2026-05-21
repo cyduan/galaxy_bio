@@ -12,6 +12,8 @@ protein analysis:
   builds an MSA for conservation/back-to-consensus analysis.
 - `Conservation / Mutability Scorer`: calculates per-residue conservation,
   entropy, consensus amino acids, and mutability scores from an MSA.
+- `Pocket and Tunnel Finder`: detects fpocket pockets/cavities and annotates
+  pocket residues for hotspot ranking.
 
 ## ProtParam install and checks
 
@@ -149,4 +151,16 @@ rate4site -h
 ```
 
 If the binary is installed elsewhere, update `RATE4SITE_BINARY` in
+`config/job_conf.yml`.
+
+## Pocket and Tunnel Finder install and checks
+
+Install fpocket:
+
+```bash
+conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge fpocket
+/data/conda_envs/hotspot_wizard/bin/fpocket -h
+```
+
+If the binary is installed elsewhere, update `FPOCKET_BINARY` in
 `config/job_conf.yml`.

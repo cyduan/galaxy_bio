@@ -115,6 +115,8 @@ execution:
           value: /data/databases/uniprot/blastdb/uniref50
         - name: RATE4SITE_BINARY
           value: /usr/bin/rate4site
+        - name: FPOCKET_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/fpocket
 
     promoter_design_local:
       runner: local
@@ -214,6 +216,8 @@ tools:
 - id: homolog_search_msa
   environment: hotspot_wizard_local
 - id: conservation_mutability_scorer
+  environment: hotspot_wizard_local
+- id: pocket_tunnel_finder
   environment: hotspot_wizard_local
 - id: promoter_window_normalizer
   environment: promoter_design_local
