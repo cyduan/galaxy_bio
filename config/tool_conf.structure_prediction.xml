@@ -15,6 +15,7 @@
     <tool file="protein_analysis/protein_sol.xml" />
     <tool file="protein_analysis/structure_quality_annotator/structure_quality_annotator.xml" />
     <tool file="protein_analysis/homolog_search_msa/homolog_search_msa.xml" />
+    <tool file="protein_analysis/conservation_mutability_scorer/conservation_mutability_scorer.xml" />
   </section>
   <section id="protein_stability" name="Protein Stability">
     <tool file="protein_stability/foldx/foldx_stability.xml" />

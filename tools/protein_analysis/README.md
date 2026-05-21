@@ -10,6 +10,8 @@ protein analysis:
   report residue-level secondary structure, solvent exposure, and quality flags.
 - `Homolog Search and MSA`: finds homologous proteins, removes redundancy, and
   builds an MSA for conservation/back-to-consensus analysis.
+- `Conservation / Mutability Scorer`: calculates per-residue conservation,
+  entropy, consensus amino acids, and mutability scores from an MSA.
 
 ## ProtParam install and checks
 
@@ -134,3 +136,17 @@ databases configured in `config/job_conf.yml`:
 
 See `tools/protein_analysis/homolog_search_msa/README.md` for download and
 `makeblastdb` commands.
+
+## Conservation / Mutability Scorer install and checks
+
+Install Rate4Site either system-wide or in the shared HotSpot Wizard
+environment:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y rate4site
+rate4site -h
+```
+
+If the binary is installed elsewhere, update `RATE4SITE_BINARY` in
+`config/job_conf.yml`.

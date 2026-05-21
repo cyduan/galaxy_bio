@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="conservation_mutability_scorer" name="Conservation / Mutability Scorer" version="0.1.0" profile="24.0">
+    <description>score residue conservation and mutability from an MSA with Rate4Site or entropy</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+        <requirement type="package">rate4site</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_conservation_mutability_scorer.py'
+  --msa-fasta '$msa_fasta'
+  --output-tsv 'residue_conservation.tsv'
+  --rate4site-output 'rate4site_raw_output.txt'
+  --run-log 'run_log.txt'
+  --backend '$backend'
+  --reference-mode '$reference.reference_mode'
+#if str($reference.reference_mode) == "sequence_id":
+  --reference-id '$reference.reference_id'
+#end if
+  --chain '$chain'
+  --accepted-aa-min-frequency '$accepted_aa_min_frequency'
+  --gap-warning-threshold '$gap_warning_threshold'
+  --rate4site-binary "\${RATE4SITE_BINARY:-rate4site}"
+    ]]></command>
+    <inputs>
+        <param name="msa_fasta" type="data" format="fasta" label="Input MSA FASTA"
+            help="Multiple sequence alignment from Tool 3 Homolog Search and MSA. Query/reference sequence should be present in the alignment." />
+        <param name="backend" type="select" label="Scoring backend">
+            <option value="auto" selected="true">Auto: use Rate4Site, fall back to entropy-only if needed</option>
+            <option value="rate4site">Require Rate4Site</option>
+            <option value="entropy_only">Entropy-only, do not call Rate4Site</option>
+        </param>
+        <conditional name="reference">
+            <param name="reference_mode" type="select" label="Reference sequence for residue numbering">
+                <option value="first_record" selected="true">First FASTA record</option>
+                <option value="sequence_id">Specific sequence ID</option>
+            </param>
+            <when value="first_record" />
+            <when value="sequence_id">
+                <param name="reference_id" type="text" value="" label="Reference sequence ID"
+                    help="Must match the FASTA identifier before the first whitespace." />
+            </when>
+        </conditional>
+        <param name="chain" type="text" value="A" label="Chain label for output" />
+        <param name="accepted_aa_min_frequency" type="float" value="0.05" min="0" max="1"
+            label="Minimum frequency for accepted amino acids"
+            help="Amino acids with non-gap column frequency at or above this threshold are listed in accepted_aas." />
+        <param name="gap_warning_threshold" type="float" value="0.5" min="0" max="1"
+            label="High-gap warning threshold" />
+    </inputs>
+    <outputs>
+        <data name="residue_conservation" format="tabular" from_work_dir="residue_conservation.tsv"
+            label="${tool.name} on ${on_string}: residue conservation and mutability" />
+        <data name="rate4site_output" format="txt" from_work_dir="rate4site_raw_output.txt"
+            label="${tool.name} on ${on_string}: raw Rate4Site output" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="msa_fasta" value="mini_msa.fasta" ftype="fasta" />
+            <param name="backend" value="entropy_only" />
+            <param name="reference_mode" value="first_record" />
+            <param name="chain" value="A" />
+            <output name="residue_conservation">
+                <assert_contents>
+                    <has_text text="residue_index" />
+                    <has_text text="mutability_score" />
+                    <has_text text="accepted_aas" />
+                </assert_contents>
+            </output>
+            <output name="rate4site_output">
+                <assert_contents>
+                    <has_text text="entropy-only backend" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白质半理性改造流程的 Tool 4，用于从 MSA 计算每个目标位点的保守性和可突变性。高度保守位点通常更可能参与催化、折叠、配体结合或结构核心稳定，直接突变风险较高；高变异但位于功能区域附近的位点更适合进入半理性突变库设计。
+
+输入
+----
+
+**Input MSA FASTA**
+  Tool 3 `Homolog Search and MSA` 输出的 `msa.fasta`。建议 MSA 中包含目标 query/reference sequence，默认使用第一条序列作为目标编号参考。
+
+参数说明
+--------
+
+**Scoring backend**
+  `Auto` 会优先调用 Rate4Site，并在 Rate4Site 不可用或失败时回退到 entropy-only。`Require Rate4Site` 会在 Rate4Site 失败时报错。`Entropy-only` 不调用外部程序，适合快速测试或最小部署。
+
+**Reference sequence for residue numbering**
+  决定 `residue_index`、`wt_aa` 如何映射。默认第一条 FASTA 记录；如果 Tool 3 输出中 query 不是第一条，可指定 sequence ID。
+
+**Chain label**
+  写入输出表的 chain 字段，便于和结构特征表、FoldX 结果、后续 hotspot 表合并。
+
+**Minimum frequency for accepted amino acids**
+  在 MSA 某列中，出现频率达到该阈值的氨基酸会写入 `accepted_aas`，代表自然序列中可接受或曾观察到的替换集合。
+
+输出
+----
+
+**residue_conservation.tsv**
+  HotSpot 流程主输出。关键列包括 `residue_index`、`chain`、`wt_aa`、`conservation_score`、`mutability_score`、`msa_entropy`、`consensus_aa`、`accepted_aas`。
+
+**raw Rate4Site output**
+  保留 Rate4Site 原始输出，便于追踪和复核。如果使用 entropy-only 或 auto fallback，该文件会说明未使用 Rate4Site。
+
+**run log**
+  记录 Rate4Site 命令、回退原因、参考序列、序列数和 alignment length。
+
+评分解释
+--------
+
+- `msa_entropy` 越高，说明该位点在同源序列中越多样。
+- `conservation_score` 被标准化到 0-1，越接近 1 越保守。
+- `mutability_score` 被标准化到 0-1，越接近 1 越适合作为可变位点候选。
+- 使用 Rate4Site 时，较低 evolutionary rate 被解释为更保守，并转换为 0-1 conservation score。
+
+注意事项
+--------
+
+- 保守性高不等于一定不能突变，但表示突变风险通常更高。
+- 高变异位点也不一定都适合突变，仍需结合结构暴露度、功能区域、口袋/通道距离、稳定性预测等信息。
+- MSA 质量会显著影响结果。对低同源、多结构域、重复结构域或序列数太少的 MSA，应先人工检查。
+    ]]></help>
+    <citations />
+</tool>

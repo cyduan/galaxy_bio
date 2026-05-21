@@ -113,6 +113,8 @@ execution:
           value: /data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
         - name: HOTSPOT_UNIREF50_BLASTDB
           value: /data/databases/uniprot/blastdb/uniref50
+        - name: RATE4SITE_BINARY
+          value: /usr/bin/rate4site
 
     promoter_design_local:
       runner: local
@@ -210,6 +212,8 @@ tools:
 - id: structure_quality_annotator
   environment: hotspot_wizard_local
 - id: homolog_search_msa
+  environment: hotspot_wizard_local
+- id: conservation_mutability_scorer
   environment: hotspot_wizard_local
 - id: promoter_window_normalizer
   environment: promoter_design_local
