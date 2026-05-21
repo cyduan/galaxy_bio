@@ -155,12 +155,17 @@ If the binary is installed elsewhere, update `RATE4SITE_BINARY` in
 
 ## Pocket and Tunnel Finder install and checks
 
-Install fpocket:
+Install fpocket, Java, and configure P2Rank/CAVER:
 
 ```bash
 conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge fpocket
 /data/conda_envs/hotspot_wizard/bin/fpocket -h
+
+conda install -p /data/conda_envs/hotspot_wizard -y -c conda-forge openjdk
+/data/conda_envs/hotspot_wizard/bin/java -version
 ```
 
-If the binary is installed elsewhere, update `FPOCKET_BINARY` in
-`config/job_conf.yml`.
+P2Rank is expected at `/data/tools/p2rank/prank`, and CAVER at
+`/data/tools/caver_3.0/caver/caver.jar`. If installed elsewhere, update
+`FPOCKET_BINARY`, `P2RANK_BINARY`, `JAVA_BINARY`, `CAVER_HOME`, and `CAVER_JAR`
+in `config/job_conf.yml`.

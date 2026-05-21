@@ -117,6 +117,21 @@ execution:
           value: /usr/bin/rate4site
         - name: FPOCKET_BINARY
           value: /data/conda_envs/hotspot_wizard/bin/fpocket
+        - name: P2RANK_BINARY
+          value: /data/tools/p2rank/prank
+        - name: JAVA_BINARY
+          value: /data/conda_envs/hotspot_wizard/bin/java
+        - name: CAVER_HOME
+          value: /data/tools/caver_3.0/caver
+        - name: CAVER_JAR
+          value: /data/tools/caver_3.0/caver/caver.jar
+        - name: CAVER_JAVA_MEM
+          value: 4000m
+        # Optional override for local CAVER distributions with a different CLI.
+        # Available placeholders: {java}, {java_mem}, {caver_home},
+        # {caver_jar}, {pdb_dir}, {config}, {out_dir}.
+        - name: CAVER_COMMAND
+          value: ""
 
     promoter_design_local:
       runner: local
