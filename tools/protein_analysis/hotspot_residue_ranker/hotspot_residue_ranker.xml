@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="hotspot_residue_ranker" name="Hotspot Residue Ranker" version="0.1.0" profile="24.0">
+    <description>integrate structure, conservation, pocket, tunnel, and active-site evidence into ranked hotspot residues</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_hotspot_residue_ranker.py'
+  --structure-features '$structure_features'
+  --conservation-tsv '$conservation_tsv'
+  --pockets-tsv '$pockets_tsv'
+  --tunnels-tsv '$tunnels_tsv'
+  --output-tsv 'hotspot_residue_ranked.tsv'
+  --report-html 'hotspot_report.html'
+  --viewer-html 'hotspot_viewer.html'
+  --run-log 'run_log.txt'
+#if str($active_site.active_site_mode) == "provided":
+  --active-site-tsv '$active_site.active_site_tsv'
+#end if
+#if str($structure_pdb_optional) not in ["", "None"]:
+  --structure-pdb '$structure_pdb_optional'
+#end if
+  --pocket-or-tunnel-weight '$pocket_or_tunnel_weight'
+  --mutability-weight '$mutability_weight'
+  --surface-accessibility-weight '$surface_accessibility_weight'
+  --flexibility-weight '$flexibility_weight'
+  --active-site-distance-weight '$active_site_distance_weight'
+  --catalytic-core-penalty '$catalytic_core_penalty'
+  --highly-conserved-penalty '$highly_conserved_penalty'
+  --buried-core-penalty '$buried_core_penalty'
+  --high-conservation-threshold '$high_conservation_threshold'
+  --buried-threshold '$buried_threshold'
+  --flexibility-b-factor-threshold '$flexibility_b_factor_threshold'
+  --active-site-near-distance '$active_site_near_distance'
+  --active-site-caution-distance '$active_site_caution_distance'
+  --top-n-report '$top_n_report'
+    ]]></command>
+    <inputs>
+        <param name="structure_features" type="data" format="tabular" label="residue_structure_features.tsv"
+            help="Output from Structure Quality Annotator." />
+        <param name="conservation_tsv" type="data" format="tabular" label="residue_conservation.tsv"
+            help="Output from Conservation / Mutability Scorer." />
+        <param name="pockets_tsv" type="data" format="tabular" label="pockets.tsv"
+            help="Output from Pocket and Tunnel Finder." />
+        <param name="tunnels_tsv" type="data" format="tabular" label="tunnels.tsv"
+            help="Output from Pocket and Tunnel Finder." />
+        <conditional name="active_site">
+            <param name="active_site_mode" type="select" label="Optional active/catalytic site TSV">
+                <option value="none" selected="true">No active-site TSV</option>
+                <option value="provided">Use active-site TSV</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="active_site_tsv" type="data" format="tabular" label="optional_active_site.tsv"
+                    help="Recommended columns: site_id, chain, residue_number, residue_name, role. Optional coordinate columns: x, y, z." />
+            </when>
+        </conditional>
+        <param name="structure_pdb_optional" type="data" format="pdb" optional="true" label="Optional structure PDB for viewer note" />
+        <section name="weights" title="Scoring weights" expanded="false">
+            <param name="pocket_or_tunnel_weight" type="float" value="0.25" label="Pocket/tunnel weight" />
+            <param name="mutability_weight" type="float" value="0.25" label="Mutability weight" />
+            <param name="surface_accessibility_weight" type="float" value="0.15" label="Surface accessibility weight" />
+            <param name="flexibility_weight" type="float" value="0.10" label="Flexibility weight" />
+            <param name="active_site_distance_weight" type="float" value="0.10" label="Active-site distance weight" />
+            <param name="catalytic_core_penalty" type="float" value="0.25" label="Catalytic core penalty" />
+            <param name="highly_conserved_penalty" type="float" value="0.20" label="Highly conserved penalty" />
+            <param name="buried_core_penalty" type="float" value="0.15" label="Buried core penalty" />
+        </section>
+        <section name="thresholds" title="Thresholds" expanded="false">
+            <param name="high_conservation_threshold" type="float" value="0.85" min="0" max="1" label="High conservation threshold" />
+            <param name="buried_threshold" type="float" value="0.09" min="0" max="1" label="Buried relative ASA threshold" />
+            <param name="flexibility_b_factor_threshold" type="float" value="70.0" min="0" label="High-flexibility B-factor threshold" />
+            <param name="active_site_near_distance" type="float" value="6.0" min="0" label="Near active-site distance" />
+            <param name="active_site_caution_distance" type="float" value="10.0" min="0" label="Caution active-site distance" />
+            <param name="top_n_report" type="integer" value="50" min="1" label="Top N rows in HTML report" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="ranked_tsv" format="tabular" from_work_dir="hotspot_residue_ranked.tsv"
+            label="${tool.name} on ${on_string}: ranked hotspots" />
+        <data name="report_html" format="html" from_work_dir="hotspot_report.html"
+            label="${tool.name} on ${on_string}: hotspot report" />
+        <data name="viewer_html" format="html" from_work_dir="hotspot_viewer.html"
+            label="${tool.name} on ${on_string}: hotspot viewer" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="structure_features" value="residue_structure_features.tsv" ftype="tabular" />
+            <param name="conservation_tsv" value="residue_conservation.tsv" ftype="tabular" />
+            <param name="pockets_tsv" value="pockets.tsv" ftype="tabular" />
+            <param name="tunnels_tsv" value="tunnels.tsv" ftype="tabular" />
+            <param name="active_site_mode" value="provided" />
+            <param name="active_site_tsv" value="optional_active_site.tsv" ftype="tabular" />
+            <output name="ranked_tsv">
+                <assert_contents>
+                    <has_text text="hotspot_score" />
+                    <has_text text="Functional hotspot" />
+                </assert_contents>
+            </output>
+            <output name="report_html">
+                <assert_contents>
+                    <has_text text="Hotspot Residue Ranker Report" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白质半理性改造流程的 Tool 6，用于整合结构质量、暴露度、保守性、可突变性、口袋/通道和可选活性位点信息，对每个残基进行 hotspot ranking。
+
+核心思想
+--------
+
+推荐热点通常是：靠近活性口袋或底物通道、进化上不是绝对保守、具有一定表面可及性或柔性，并且不直接位于催化核心的残基。
+
+默认打分近似为：
+
+```
+hotspot_score =
+  pocket_or_tunnel_weight
+  + mutability_weight
+  + surface_accessibility_weight
+  + flexibility_weight
+  + distance_to_ligand_or_active_site_weight
+  - catalytic_core_penalty
+  - highly_conserved_penalty
+  - buried_core_penalty
+```
+
+输出分类
+--------
+
+**Functional hotspot**
+  位于口袋/通道附近，且不是高度保守。适合优先做功能筛选。
+
+**Stability hotspot**
+  相对可突变、暴露或半暴露，可能影响稳定性或表达表现。
+
+**Consensus hotspot**
+  当前氨基酸不同于同源家族共识氨基酸，可考虑 back-to-consensus。
+
+**Risky hotspot**
+  高度保守、埋藏且保守、或靠近催化核心。建议谨慎处理。
+
+输入说明
+--------
+
+- `residue_structure_features.tsv`: 来自 Structure Quality Annotator。
+- `residue_conservation.tsv`: 来自 Conservation / Mutability Scorer。
+- `pockets.tsv` 与 `tunnels.tsv`: 来自 Pocket and Tunnel Finder。
+- `optional_active_site.tsv`: 可选。推荐列：`site_id, chain, residue_number, residue_name, role`。如果某行表示催化核心，可把 role 写为 `catalytic`。
+
+输出说明
+--------
+
+**hotspot_residue_ranked.tsv**
+  主输出表，包含 rank、hotspot_score、hotspot_class、recommendation 以及各项子评分和惩罚项。
+
+**hotspot_report.html**
+  汇总报告和 top candidates 表。
+
+**hotspot_viewer.html**
+  轻量 HTML viewer scaffold，列出 top hotspot residue IDs。可配合 Galaxy 的 PDB 可视化工具使用。
+
+注意事项
+--------
+
+- 该工具给出的是候选优先级，不是突变一定成功的保证。
+- 若 active-site TSV 缺失，工具不会对催化核心做精确惩罚，只能依赖高保守/埋藏等间接信号。
+- 后续仍建议结合 FoldX/Rosetta 稳定性预测、功能实验设计和文献知识筛选。
+    ]]></help>
+    <citations />
+</tool>

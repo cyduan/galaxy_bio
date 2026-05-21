@@ -14,6 +14,8 @@ protein analysis:
   entropy, consensus amino acids, and mutability scores from an MSA.
 - `Pocket and Tunnel Finder`: detects fpocket pockets/cavities and annotates
   pocket residues for hotspot ranking.
+- `Hotspot Residue Ranker`: integrates structure, conservation, pocket/tunnel,
+  and optional active-site evidence into ranked hotspot residues.
 
 ## ProtParam install and checks
 

@@ -1,0 +1,5 @@
+structure_id	chain	residue_number	insertion_code	residue_id	amino_acid	dssp_secondary_structure	secondary_structure_class	asa	relative_asa	exposure_class	freesasa_total_asa	freesasa_relative_asa	freesasa_exposure_class	freesasa_main_chain_asa	freesasa_side_chain_asa	freesasa_polar_asa	freesasa_apolar_asa	phi	psi	avg_b_factor	quality_flags
+mini	A	1		A:1	A	-	coil	100	0.45	exposed	95	0.42	exposed	30	65	40	55			25	ok
+mini	A	2		A:2	V	-	coil	80	0.28	intermediate	75	0.25	intermediate	25	50	20	55			35	ok
+mini	A	3		A:3	L	H	helix	10	0.04	buried	9	0.03	buried	3	6	3	6			20	ok
+mini	A	4		A:4	S	-	coil	120	0.62	exposed	118	0.60	exposed	40	78	70	48			88	high_b_factor

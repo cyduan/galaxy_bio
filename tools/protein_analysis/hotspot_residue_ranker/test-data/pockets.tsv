@@ -1,0 +1,2 @@
+pocket_id	source	score	druggability_score	number_of_alpha_spheres	total_sasa	polar_sasa	apolar_sasa	volume	mean_local_hydrophobic_density	mean_alpha_sphere_radius	center_x	center_y	center_z	residue_count	residue_ids	pocket_file	extra_attributes_json	status	warning
+fpocket:1	fpocket	25	0.8	30	100	40	60	250						2	A:ALA1,A:VAL2	pockets/pocket1_atm.pdb	{}	ok	

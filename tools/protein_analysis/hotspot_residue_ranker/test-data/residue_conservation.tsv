@@ -1,0 +1,5 @@
+residue_index	chain	wt_aa	alignment_column	conservation_score	mutability_score	msa_entropy	consensus_aa	accepted_aas	accepted_aas_with_frequency	rate4site_score	rate4site_score_normalized	non_gap_count	gap_fraction	status	warning
+1	A	A	1	0.30	0.70	0.70	A	A,V	A:0.7,V:0.3			10	0	ok	
+2	A	V	2	0.60	0.40	0.40	V	V,I	V:0.6,I:0.4			10	0	ok	
+3	A	L	3	0.95	0.05	0.05	L	L	L:1.0			10	0	ok	
+4	A	S	4	0.50	0.50	0.50	T	T,S	T:0.6,S:0.4			10	0	ok	

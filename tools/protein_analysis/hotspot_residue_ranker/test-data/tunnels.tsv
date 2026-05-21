@@ -1,0 +1,2 @@
+tunnel_id	source	linked_pocket_id	start_x	start_y	start_z	bottleneck_radius	length	curvature	residue_ids	tunnel_file	extra_attributes_json	status	warning
+caver:1	caver		0	0	0	1.2	15	1.5	A:VAL2,A:SER4	tunnel1.pdb	{}	ok	
