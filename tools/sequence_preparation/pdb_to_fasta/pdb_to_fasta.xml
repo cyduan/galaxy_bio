@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="pdb_to_fasta" name="PDB to FASTA" version="0.1.0" profile="24.0">
+  <description>extract protein chain sequences from a PDB structure</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/pdb_to_fasta.py'
+  --input-pdb '$input_pdb'
+  --output-fasta 'pdb_sequences.fasta'
+  --report-tsv 'pdb_to_fasta_report.tsv'
+  --chain-mode '$chain.chain_mode'
+#if str($chain.chain_mode) == "selected":
+  --chain-id '$chain.chain_id'
+#end if
+  --record-mode '$record_mode'
+  --model '$model'
+#if str($include_hetatm) == "true":
+  --include-hetatm
+#end if
+#if str($unknown_to_x) == "true":
+  --unknown-to-x
+#end if
+  --sequence-id-prefix '$sequence_id_prefix'
+  ]]></command>
+  <inputs>
+    <param name="input_pdb" type="data" format="pdb" label="Input PDB file"
+      help="PDB coordinate file from RCSB PDB, AlphaFold/ESMFold/ColabFold, or another structure source." />
+    <conditional name="chain">
+      <param name="chain_mode" type="select" label="Chain selection">
+        <option value="all" selected="true">Extract all protein chains</option>
+        <option value="selected">Extract one selected chain</option>
+      </param>
+      <when value="all" />
+      <when value="selected">
+        <param name="chain_id" type="text" value="A" label="Chain ID"
+          help="For blank-chain PDB files use '_'." />
+      </when>
+    </conditional>
+    <param name="record_mode" type="select" label="FASTA record mode">
+      <option value="separate_chains" selected="true">One FASTA record per chain</option>
+      <option value="concatenate_chains">Concatenate extracted chains into one FASTA record</option>
+    </param>
+    <param name="model" type="text" value="1" label="PDB MODEL number"
+      help="Default 1. Use 'all' only when you intentionally want to read every MODEL block." />
+    <param name="include_hetatm" type="boolean" checked="true" truevalue="true" falsevalue="false"
+      label="Use HETATM records for known modified amino acids"
+      help="Recommended. This maps common modified residues such as MSE to their standard amino acid equivalents." />
+    <param name="unknown_to_x" type="boolean" checked="true" truevalue="true" falsevalue="false"
+      label="Represent unknown ATOM residues as X" />
+    <param name="sequence_id_prefix" type="text" value="" label="Optional FASTA ID prefix"
+      help="If empty, the uploaded file stem is used. Output IDs look like prefix_chain_A." />
+  </inputs>
+  <outputs>
+    <data name="output_fasta" format="fasta" from_work_dir="pdb_sequences.fasta"
+      label="${tool.name} on ${on_string}: FASTA sequences" />
+    <data name="report_tsv" format="tabular" from_work_dir="pdb_to_fasta_report.tsv"
+      label="${tool.name} on ${on_string}: extraction report" />
+  </outputs>
+  <tests>
+    <test expect_num_outputs="2">
+      <param name="input_pdb" value="mini_multichain.pdb" ftype="pdb" />
+      <param name="chain_mode" value="all" />
+      <param name="record_mode" value="separate_chains" />
+      <param name="model" value="1" />
+      <param name="include_hetatm" value="true" />
+      <param name="unknown_to_x" value="true" />
+      <output name="output_fasta">
+        <assert_contents>
+          <has_text text="chain_A" />
+          <has_text text="AGM" />
+          <has_text text="chain_B" />
+          <has_text text="SK" />
+        </assert_contents>
+      </output>
+      <output name="report_tsv">
+        <assert_contents>
+          <has_text text="sequence_length" />
+          <has_text text="nonstandard_residues_mapped" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help><![CDATA[
+用途说明
+--------
+
+本工具用于从 PDB 结构文件中提取蛋白序列并输出 FASTA，方便把结构文件接入后续的同源搜索、MSA、保守性分析和 HotSpot Wizard-like 流程。
+
+输入
+----
+
+**Input PDB file**
+  PDB 原子坐标文件。可以来自 RCSB PDB、AlphaFold/ESMFold/ColabFold 输出，或其他结构来源。
+
+参数说明
+--------
+
+**Chain selection**
+  默认提取所有蛋白链。若只分析某一条链，例如链 A，可选择 `Extract one selected chain` 并填写 `A`。
+
+**FASTA record mode**
+  默认每条链输出一个 FASTA record。对于同源搜索通常推荐选择目标链；如果确实要把多个链拼成一条序列，可选择 concatenate。
+
+**PDB MODEL number**
+  默认读取 MODEL 1。多数晶体结构或预测结构没有 MODEL 块，会自动按 model 1 处理。NMR 多模型结构一般建议使用第一个模型。
+
+**Use HETATM records for known modified amino acids**
+  默认开启，会将常见修饰氨基酸映射为标准氨基酸，例如 MSE -> M、SEP -> S、TPO -> T。
+
+**Represent unknown ATOM residues as X**
+  默认开启。无法识别的 ATOM 残基会写成 `X`，同时在 report 中标记 warning。
+
+输出
+----
+
+**FASTA sequences**
+  从 PDB 提取的蛋白序列，可直接作为 Tool 3 Homolog Search and MSA 的 query FASTA。
+
+**extraction report**
+  每条链一行，记录 chain ID、输出 sequence ID、长度、HETATM 使用数量、非标准残基映射数量、未知残基数量和 warning。
+
+注意事项
+--------
+
+- PDB 文件里的 SEQRES 与 ATOM 坐标残基可能不完全一致。本工具基于 ATOM/HETATM 坐标记录提取序列，因此输出的是结构中实际有坐标的残基序列。
+- 如果 PDB 中缺失 loop 或残基没有坐标，FASTA 中也不会包含这些缺失残基。
+- 对多链复合物做同源搜索时，通常应先选定目标蛋白链，而不是直接拼接所有链。
+  ]]></help>
+  <citations />
+</tool>

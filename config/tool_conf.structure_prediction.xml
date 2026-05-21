@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <toolbox monitor="true">
-  <section id="sequence_preparation" name="Sequence Preparation">
+  <section id="sequence_preparation" name="Protein Formats">
     <tool file="sequence_preparation/table_to_fasta/table_to_fasta.xml" />
     <tool file="sequence_preparation/manual_sequences_to_file/manual_sequences_to_file.xml" />
     <tool file="sequence_preparation/manual_sequences_to_file/text_sequences_to_file.xml" />
     <tool file="sequence_preparation/fasta_to_table/fasta_to_table.xml" />
+    <tool file="sequence_preparation/pdb_to_fasta/pdb_to_fasta.xml" />
   </section>
   <section id="similarity_search" name="Similarity Search">
     <tool file="similarity_search/blast_search/blast_search.xml" />
