@@ -121,3 +121,16 @@ Check the binaries:
 /data/conda_envs/hotspot_wizard/bin/muscle -version
 /data/conda_envs/hotspot_wizard/bin/mmseqs version
 ```
+
+The Homolog Search and MSA wrapper can use uploaded FASTA datasets or server
+databases configured in `config/job_conf.yml`:
+
+```text
+/data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta
+/data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta
+/data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
+/data/databases/uniprot/blastdb/
+```
+
+See `tools/protein_analysis/homolog_search_msa/README.md` for download and
+`makeblastdb` commands.

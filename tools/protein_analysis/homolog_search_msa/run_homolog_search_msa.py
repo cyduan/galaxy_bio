@@ -91,6 +91,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--query-fasta", required=True, help="Input query protein FASTA.")
     parser.add_argument("--subject-fasta", required=True, help="Subject/database FASTA containing candidate homologs.")
+    parser.add_argument(
+        "--blast-db-prefix",
+        default="",
+        help="Optional pre-built BLAST protein database prefix. If omitted, makeblastdb is run on --subject-fasta.",
+    )
     parser.add_argument("--homologs-fasta", required=True, help="Output FASTA of homologs passing search filters.")
     parser.add_argument(
         "--filtered-homologs-fasta", required=True, help="Output FASTA after redundancy filtering."
@@ -206,19 +211,41 @@ def run_command(command: list[str], log_lines: list[str], stdout_path: Path | No
 
 
 def run_blastp(args: argparse.Namespace, raw_path: Path, tmp_dir: Path, log_lines: list[str]) -> list[SearchHit]:
-    db_prefix = tmp_dir / "blast_subject_db"
-    makeblastdb_cmd = [
-        args.makeblastdb_binary,
-        "-in",
-        str(Path(args.subject_fasta)),
-        "-dbtype",
-        "prot",
-        "-out",
-        str(db_prefix),
-    ]
-    completed = run_command(makeblastdb_cmd, log_lines)
-    if completed.returncode != 0:
-        raise ToolError("makeblastdb failed; see run log for details.")
+    if args.blast_db_prefix:
+        db_prefix = Path(args.blast_db_prefix)
+        if not blast_database_exists(db_prefix):
+            raise ToolError(
+                f"Pre-built BLAST database prefix was not found or is incomplete: {db_prefix}. "
+                "Run makeblastdb first or choose an uploaded FASTA database."
+            )
+        log_lines.append(f"Using pre-built BLAST database prefix: {db_prefix}")
+    else:
+        db_prefix = tmp_dir / "blast_subject_db"
+        makeblastdb_cmd = [
+            args.makeblastdb_binary,
+            "-in",
+            str(Path(args.subject_fasta)),
+            "-dbtype",
+            "prot",
+            "-parse_seqids",
+            "-out",
+            str(db_prefix),
+        ]
+        completed = run_command(makeblastdb_cmd, log_lines)
+        if completed.returncode != 0:
+            log_lines.append("makeblastdb with -parse_seqids failed; retrying without -parse_seqids.")
+            makeblastdb_cmd = [
+                args.makeblastdb_binary,
+                "-in",
+                str(Path(args.subject_fasta)),
+                "-dbtype",
+                "prot",
+                "-out",
+                str(db_prefix),
+            ]
+            completed = run_command(makeblastdb_cmd, log_lines)
+            if completed.returncode != 0:
+                raise ToolError("makeblastdb failed; see run log for details.")
 
     blast_tmp = tmp_dir / "blast_raw.tsv"
     outfmt = "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen qcovs"
@@ -279,6 +306,11 @@ def run_blastp(args: argparse.Namespace, raw_path: Path, tmp_dir: Path, log_line
             )
     write_search_hits(hits, raw_path)
     return hits
+
+
+def blast_database_exists(prefix: Path) -> bool:
+    protein_markers = [".pin", ".psq", ".pdb"]
+    return any(Path(str(prefix) + suffix).exists() for suffix in protein_markers)
 
 
 def run_mmseqs_search(args: argparse.Namespace, raw_path: Path, tmp_dir: Path, log_lines: list[str]) -> list[SearchHit]:
@@ -385,6 +417,54 @@ def use_all_subjects(args: argparse.Namespace, raw_path: Path, subject_records: 
     ]
     write_search_hits(hits, raw_path)
     return hits
+
+
+def read_selected_fasta(path: Path, wanted_ids: set[str]) -> dict[str, FastaRecord]:
+    """Read only selected records from a potentially large FASTA file."""
+    if not wanted_ids:
+        return {}
+
+    selected: dict[str, FastaRecord] = {}
+    current_header: str | None = None
+    sequence_parts: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_header, sequence_parts
+        if current_header is None:
+            return
+        record = record_from_parts(current_header, sequence_parts)
+        matched_id = match_record_id(record.identifier, wanted_ids)
+        if matched_id and matched_id not in selected:
+            selected[matched_id] = record
+        current_header = None
+        sequence_parts = []
+
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                flush()
+                current_header = line[1:].strip()
+                sequence_parts = []
+            else:
+                sequence_parts.append("".join(line.split()))
+    flush()
+    return selected
+
+
+def match_record_id(record_id: str, wanted_ids: set[str]) -> str | None:
+    candidates = {record_id}
+    if "|" in record_id:
+        parts = record_id.split("|")
+        candidates.update(part for part in parts if part)
+        if len(parts) >= 2:
+            candidates.add(parts[1])
+    for candidate in candidates:
+        if candidate in wanted_ids:
+            return candidate
+    return None
 
 
 def parse_float(value: str | None) -> float | None:
@@ -671,13 +751,12 @@ def run_msa(
 
 def write_summary(
     path: Path,
-    subject_records: list[FastaRecord],
+    subject_by_id: dict[str, FastaRecord],
     best_hits: dict[str, SearchHit],
     filtered_ids: set[str],
     msa_ids: set[str],
     selected_ids: set[str],
 ) -> None:
-    subject_by_id = {record.identifier: record for record in subject_records}
     # Avoid writing a row for every sequence in a large subject database; the
     # summary is intentionally limited to homologs selected for downstream use.
     all_ids = sorted(best_hits)
@@ -723,13 +802,6 @@ def main() -> int:
 
     try:
         query_records = read_fasta(Path(args.query_fasta))
-        subject_records = read_fasta(Path(args.subject_fasta))
-        subject_by_id: dict[str, FastaRecord] = {}
-        for record in subject_records:
-            if record.identifier not in subject_by_id:
-                subject_by_id[record.identifier] = record
-            else:
-                log_lines.append(f"WARNING: duplicate subject id ignored after first occurrence: {record.identifier}")
 
         with tempfile.TemporaryDirectory(prefix="homolog_search_msa_") as tmp_name:
             tmp_dir = Path(tmp_name)
@@ -739,10 +811,26 @@ def main() -> int:
             elif args.search_backend == "mmseqs":
                 hits = run_mmseqs_search(args, raw_search_path, tmp_dir, log_lines)
             else:
+                subject_records = read_fasta(Path(args.subject_fasta))
                 hits = use_all_subjects(args, raw_search_path, subject_records)
 
             best_hits = choose_best_hits(hits, args)
             selected_ids = set(best_hits)
+            if args.search_backend == "all_subjects":
+                subject_by_id: dict[str, FastaRecord] = {}
+                for record in subject_records:
+                    if record.identifier not in subject_by_id:
+                        subject_by_id[record.identifier] = record
+                    else:
+                        log_lines.append(f"WARNING: duplicate subject id ignored after first occurrence: {record.identifier}")
+            else:
+                subject_by_id = read_selected_fasta(Path(args.subject_fasta), selected_ids)
+                missing_ids = sorted(selected_ids - set(subject_by_id))
+                for sequence_id in missing_ids[:20]:
+                    log_lines.append(f"WARNING: selected subject id not found in subject FASTA: {sequence_id}")
+                if len(missing_ids) > 20:
+                    log_lines.append(f"WARNING: additional missing selected subject ids: {len(missing_ids) - 20}")
+
             homolog_records: list[FastaRecord] = []
             for sequence_id in sorted(
                 selected_ids,
@@ -775,7 +863,7 @@ def main() -> int:
 
             write_summary(
                 Path(args.summary_tsv),
-                subject_records,
+                subject_by_id,
                 best_hits,
                 filtered_ids,
                 msa_ids,

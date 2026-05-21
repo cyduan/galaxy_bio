@@ -101,6 +101,18 @@ execution:
           value: /data/conda_envs/hotspot_wizard/bin/mafft
         - name: MUSCLE_BINARY
           value: /data/conda_envs/hotspot_wizard/bin/muscle
+        - name: HOTSPOT_SWISSPROT_FASTA
+          value: /data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta
+        - name: HOTSPOT_SWISSPROT_BLASTDB
+          value: /data/databases/uniprot/blastdb/uniprot_sprot
+        - name: HOTSPOT_UNIREF90_FASTA
+          value: /data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta
+        - name: HOTSPOT_UNIREF90_BLASTDB
+          value: /data/databases/uniprot/blastdb/uniref90
+        - name: HOTSPOT_UNIREF50_FASTA
+          value: /data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
+        - name: HOTSPOT_UNIREF50_BLASTDB
+          value: /data/databases/uniprot/blastdb/uniref50
 
     promoter_design_local:
       runner: local

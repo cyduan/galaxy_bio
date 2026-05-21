@@ -29,6 +29,84 @@ CDHIT_BINARY: /data/conda_envs/hotspot_wizard/bin/cd-hit
 MAFFT_BINARY: /data/conda_envs/hotspot_wizard/bin/mafft
 MUSCLE_BINARY: /data/conda_envs/hotspot_wizard/bin/muscle
 MMSEQS_BINARY: /data/conda_envs/hotspot_wizard/bin/mmseqs
+HOTSPOT_SWISSPROT_FASTA: /data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta
+HOTSPOT_SWISSPROT_BLASTDB: /data/databases/uniprot/blastdb/uniprot_sprot
+HOTSPOT_UNIREF90_FASTA: /data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta
+HOTSPOT_UNIREF90_BLASTDB: /data/databases/uniprot/blastdb/uniref90
+HOTSPOT_UNIREF50_FASTA: /data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
+HOTSPOT_UNIREF50_BLASTDB: /data/databases/uniprot/blastdb/uniref50
+```
+
+## Download UniProt Databases
+
+Recommended server locations:
+
+```text
+/data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta
+/data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta
+/data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
+/data/databases/uniprot/blastdb/
+```
+
+Download FASTA files:
+
+```bash
+mkdir -p /data/databases/uniprot/current_release/knowledgebase/complete
+mkdir -p /data/databases/uniprot/current_release/uniref/uniref90
+mkdir -p /data/databases/uniprot/current_release/uniref/uniref50
+mkdir -p /data/databases/uniprot/blastdb
+
+cd /data/databases/uniprot/current_release/knowledgebase/complete
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz.md5
+md5sum -c uniprot_sprot.fasta.gz.md5
+gunzip -kf uniprot_sprot.fasta.gz
+
+cd /data/databases/uniprot/current_release/uniref/uniref90
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta.gz
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta.gz.md5
+md5sum -c uniref90.fasta.gz.md5
+gunzip -kf uniref90.fasta.gz
+
+cd /data/databases/uniprot/current_release/uniref/uniref50
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta.gz
+wget -c https://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta.gz.md5
+md5sum -c uniref50.fasta.gz.md5
+gunzip -kf uniref50.fasta.gz
+```
+
+Build BLAST databases once. This is important for UniRef90/UniRef50 because
+temporary per-job `makeblastdb` would be very slow and disk-heavy:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/makeblastdb \
+  -in /data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta \
+  -dbtype prot \
+  -parse_seqids \
+  -out /data/databases/uniprot/blastdb/uniprot_sprot
+
+/data/conda_envs/hotspot_wizard/bin/makeblastdb \
+  -in /data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta \
+  -dbtype prot \
+  -parse_seqids \
+  -out /data/databases/uniprot/blastdb/uniref90
+
+/data/conda_envs/hotspot_wizard/bin/makeblastdb \
+  -in /data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta \
+  -dbtype prot \
+  -parse_seqids \
+  -out /data/databases/uniprot/blastdb/uniref50
+```
+
+Check the files:
+
+```bash
+ls -lh /data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta
+ls -lh /data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta
+ls -lh /data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta
+ls -lh /data/databases/uniprot/blastdb/uniprot_sprot.*
+ls -lh /data/databases/uniprot/blastdb/uniref90.*
+ls -lh /data/databases/uniprot/blastdb/uniref50.*
 ```
 
 ## Environment Checks

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<tool id="homolog_search_msa" name="Homolog Search and MSA" version="0.1.0" profile="24.0">
+<tool id="homolog_search_msa" name="Homolog Search and MSA" version="0.2.0" profile="24.0">
     <description>find homologs, reduce redundancy, and build a multiple sequence alignment</description>
     <requirements>
         <requirement type="package">python</requirement>
@@ -12,7 +12,18 @@
     <command detect_errors="exit_code"><![CDATA[
 \${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_homolog_search_msa.py'
   --query-fasta '$query_fasta'
-  --subject-fasta '$subject_fasta'
+#if str($subject.source_mode) == "upload":
+  --subject-fasta '$subject.subject_fasta'
+#elif str($subject.source_mode) == "swissprot":
+  --subject-fasta "\${HOTSPOT_SWISSPROT_FASTA:-/data/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta}"
+  --blast-db-prefix "\${HOTSPOT_SWISSPROT_BLASTDB:-/data/databases/uniprot/blastdb/uniprot_sprot}"
+#elif str($subject.source_mode) == "uniref90":
+  --subject-fasta "\${HOTSPOT_UNIREF90_FASTA:-/data/databases/uniprot/current_release/uniref/uniref90/uniref90.fasta}"
+  --blast-db-prefix "\${HOTSPOT_UNIREF90_BLASTDB:-/data/databases/uniprot/blastdb/uniref90}"
+#elif str($subject.source_mode) == "uniref50":
+  --subject-fasta "\${HOTSPOT_UNIREF50_FASTA:-/data/databases/uniprot/current_release/uniref/uniref50/uniref50.fasta}"
+  --blast-db-prefix "\${HOTSPOT_UNIREF50_BLASTDB:-/data/databases/uniprot/blastdb/uniref50}"
+#end if
   --homologs-fasta 'homologs.fasta'
   --filtered-homologs-fasta 'filtered_homologs.fasta'
   --msa-fasta 'msa.fasta'
@@ -49,8 +60,21 @@
     <inputs>
         <param name="query_fasta" type="data" format="fasta" label="Query protein FASTA"
             help="Protein sequence used as the HotSpot Wizard target sequence. One or more query records are accepted." />
-        <param name="subject_fasta" type="data" format="fasta" label="Subject/database protein FASTA"
-            help="FASTA file containing candidate homologs. For production this can be a curated organism/protein-family database; for testing it can be a small homolog set." />
+        <conditional name="subject">
+            <param name="source_mode" type="select" label="Subject/database source">
+                <option value="swissprot" selected="true">Server database: UniProtKB/Swiss-Prot</option>
+                <option value="uniref90">Server database: UniRef90</option>
+                <option value="uniref50">Server database: UniRef50</option>
+                <option value="upload">Uploaded FASTA from history</option>
+            </param>
+            <when value="swissprot" />
+            <when value="uniref90" />
+            <when value="uniref50" />
+            <when value="upload">
+                <param name="subject_fasta" type="data" format="fasta" label="Uploaded subject/database protein FASTA"
+                    help="FASTA file containing candidate homologs. This keeps the earlier workflow behavior and builds a temporary BLAST database for the uploaded FASTA." />
+            </when>
+        </conditional>
         <param name="search_backend" type="select" label="Homolog search backend">
             <option value="blastp" selected="true">BLAST+ blastp search</option>
             <option value="mmseqs">MMseqs2 easy-search</option>
@@ -102,6 +126,7 @@
     <tests>
         <test expect_num_outputs="8">
             <param name="query_fasta" value="homolog_query.fasta" ftype="fasta" />
+            <param name="source_mode" value="upload" />
             <param name="subject_fasta" value="homolog_subjects.fasta" ftype="fasta" />
             <param name="search_backend" value="all_subjects" />
             <param name="filter_backend" value="internal" />
@@ -140,6 +165,18 @@
 
 本工具是 HotSpot Wizard-like 蛋白质半理性改造流程的 Tool 3：寻找同源序列并构建 MSA。它为后续保守性计算、back-to-consensus 突变、自然可接受氨基酸分布分析提供基础输入。
 
+数据库来源
+----------
+
+**Server database: UniProtKB/Swiss-Prot**
+  默认推荐起点。Swiss-Prot 是人工审阅的 UniProtKB 子集，质量高、冗余较低，适合先做小规模可靠同源搜索。
+
+**Server database: UniRef90 / UniRef50**
+  更大的聚类数据库。UniRef90 更细，UniRef50 更粗；适合需要更广覆盖时使用。注意这两个库体积很大，建议管理员预先下载 FASTA 并构建 BLAST DB。
+
+**Uploaded FASTA from history**
+  保留之前的上传路径。适合使用用户手工整理的同源序列集、某个物种蛋白组、某个蛋白家族 FASTA，或小规模测试数据。
+
 流程逻辑
 --------
 
@@ -152,13 +189,13 @@
 --------
 
 **Query protein FASTA**
-  目标蛋白序列。通常来自 Tool 1 结构准备步骤中的目标序列，或用户上传的 FASTA。
+  目标蛋白序列。可以由 `PDB to FASTA` 工具从结构中提取，也可以直接上传。
 
-**Subject/database protein FASTA**
-  候选同源序列库。可以是小型 curated family FASTA，也可以是从 UniProt/本地数据库抽取出的蛋白 FASTA。若你已经手工准备好同源序列集合，可选择 `Use all subject sequences directly` 跳过搜索。
+**Subject/database source**
+  选择服务器预置数据库或上传 FASTA。服务器预置数据库路径由 `config/job_conf.yml` 中的 `HOTSPOT_SWISSPROT_FASTA`、`HOTSPOT_UNIREF90_FASTA`、`HOTSPOT_UNIREF50_FASTA` 等环境变量控制。
 
 **Homolog search backend**
-  `BLAST+ blastp search` 是默认生产路径；`MMseqs2 easy-search` 适合大规模数据库；`Use all subject sequences directly` 适合已整理同源集合或测试。
+  `BLAST+ blastp search` 是默认路径。对服务器预置数据库，工具会使用预构建 BLAST DB prefix，避免每次任务重新建库。`MMseqs2 easy-search` 适合大规模搜索，但当前仍以 FASTA 路径作为输入。`Use all subject sequences directly` 适合已整理同源集合或测试。
 
 **Redundancy filtering backend**
   `CD-HIT` 是默认路径；`MMseqs2 easy-cluster` 适合大规模数据；`Internal exact deduplication only` 只去除完全相同序列，主要用于测试或很小数据集。
@@ -193,7 +230,7 @@
 - 同源序列越杂，MSA 越可能质量下降；建议根据蛋白家族和任务调整 identity、coverage 和 E-value。
 - 对 back-to-consensus 设计，通常需要足够多但不过度冗余的同源序列。
 - 对低同源、重复结构域或多结构域蛋白，建议先人工检查 MSA。
-- 本工具不会自动下载 UniProt/NCBI nr；出于可复现和服务器安全考虑，数据库 FASTA 需要作为 Galaxy 数据集输入或由管理员预先准备。
+- UniRef90/UniRef50 数据库很大，不建议每次任务临时建库；应由管理员预先下载并构建 BLAST DB。
     ]]></help>
     <citations />
 </tool>
