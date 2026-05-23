@@ -1,0 +1,6 @@
+HEADER    MINI FOLDX TEST PDB
+ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 20.00           N
+ATOM      2  N   VAL A   2       1.000   0.000   0.000  1.00 20.00           N
+ATOM      3  N   LEU A   3       2.000   0.000   0.000  1.00 20.00           N
+TER
+END

@@ -19,6 +19,9 @@ protein analysis:
 - `Mutation Designer`: recommends hotspot substitutions from MSA variation,
   consensus residues, conservative replacements, alanine scanning, and reduced
   amino-acid alphabets; also writes smart-library and degenerate-codon tables.
+- `Stability Predictor`: converts candidate mutations into FoldX
+  `individual_list.txt`, runs RepairPDB/BuildModel, and formats ΔΔG results for
+  HotSpot filtering while optionally preserving raw FoldX outputs.
 
 ## ProtParam install and checks
 
@@ -201,4 +204,68 @@ Expected main outputs:
 candidate_mutations.tsv
 smart_library.tsv
 degenerate_codons.tsv
+```
+
+## Stability Predictor / FoldX checks
+
+FoldX is licensed software and must be installed separately by an authorized
+user. This repository does not include FoldX binaries or license files. The
+configured server path is:
+
+```text
+/data/tools/foldx/foldx
+```
+
+Check the authorized executable:
+
+```bash
+/data/tools/foldx/foldx --help
+/data/tools/foldx/foldx --version
+```
+
+Run a local Tool 8 smoke test:
+
+```bash
+mkdir -p /data/test/stability_predictor_selftest
+cd /data/tools/galaxy_bio
+python tools/protein_analysis/stability_predictor/run_stability_predictor.py \
+  --candidate-mutations tools/protein_analysis/stability_predictor/test-data/candidate_mutations.tsv \
+  --pdb tools/protein_analysis/stability_predictor/test-data/foldx_input.pdb \
+  --mutation-ddg /data/test/stability_predictor_selftest/mutation_ddg.tsv \
+  --filtered-mutations /data/test/stability_predictor_selftest/stability_filtered_mutations.tsv \
+  --raw-ddg-output /data/test/stability_predictor_selftest/foldx_raw_ddg.fxout \
+  --repaired-pdb /data/test/stability_predictor_selftest/repaired.pdb \
+  --mutant-models-dir /data/test/stability_predictor_selftest/mutant_models \
+  --archive /data/test/stability_predictor_selftest/foldx_outputs.zip \
+  --individual-list /data/test/stability_predictor_selftest/individual_list.txt \
+  --summary-json /data/test/stability_predictor_selftest/summary.json \
+  --run-log /data/test/stability_predictor_selftest/run_log.txt \
+  --foldx-command /data/tools/foldx/foldx
+```
+
+For wrapper-only testing without a licensed FoldX binary, use the built-in mock:
+
+```bash
+python tools/protein_analysis/stability_predictor/run_stability_predictor.py \
+  --candidate-mutations tools/protein_analysis/stability_predictor/test-data/candidate_mutations.tsv \
+  --pdb tools/protein_analysis/stability_predictor/test-data/foldx_input.pdb \
+  --mutation-ddg /tmp/mutation_ddg.tsv \
+  --filtered-mutations /tmp/stability_filtered_mutations.tsv \
+  --raw-ddg-output /tmp/foldx_raw_ddg.fxout \
+  --repaired-pdb /tmp/repaired.pdb \
+  --mutant-models-dir /tmp/mutant_models \
+  --archive /tmp/foldx_outputs.zip \
+  --individual-list /tmp/individual_list.txt \
+  --summary-json /tmp/summary.json \
+  --run-log /tmp/run_log.txt \
+  --foldx-command mock-foldx
+```
+
+The HotSpot filtering categories are:
+
+```text
+ΔΔG <= 0 kcal/mol      priority
+0 < ΔΔG <= 1 kcal/mol acceptable
+1 < ΔΔG <= 2 kcal/mol caution
+ΔΔG > 2 kcal/mol      high_risk
 ```

@@ -19,10 +19,9 @@
     <tool file="protein_analysis/pocket_tunnel_finder/pocket_tunnel_finder.xml" />
     <tool file="protein_analysis/hotspot_residue_ranker/hotspot_residue_ranker.xml" />
     <tool file="protein_analysis/mutation_designer/mutation_designer.xml" />
-  </section>
-  <section id="protein_stability" name="Protein Stability">
     <tool file="protein_stability/foldx/foldx_stability.xml" />
     <tool file="protein_stability/foldx/foldx_buildmodel.xml" />
+    <tool file="protein_analysis/stability_predictor/stability_predictor.xml" />
   </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />

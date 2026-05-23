@@ -1,0 +1,5 @@
+HEADER    MOCK FOLDX MUTANT
+REMARK    MUTATION AA1V
+ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00 20.00           N
+TER
+END

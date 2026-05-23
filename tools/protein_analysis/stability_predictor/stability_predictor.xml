@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="stability_predictor" name="Stability Predictor" version="0.1.0" profile="24.0">
+    <description>screen HotSpot candidate mutations with FoldX BuildModel ΔΔG</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/run_stability_predictor.py'
+  --candidate-mutations '$candidate_mutations'
+  --pdb '$pdb'
+  --mutation-ddg 'mutation_ddg.tsv'
+  --filtered-mutations 'stability_filtered_mutations.tsv'
+  --raw-ddg-output 'foldx_raw_ddg.fxout'
+  --repaired-pdb 'repaired.pdb'
+  --mutant-models-dir 'mutant_models'
+  --archive 'foldx_outputs.zip'
+  --individual-list 'individual_list.txt'
+  --summary-json 'summary.json'
+  --run-log 'run_log.txt'
+#if str($foldx_command) not in ["", "None"]:
+  --foldx-command '$foldx_command'
+#else
+  --foldx-command "\${FOLDX_BINARY:-foldx}"
+#end if
+  --number-of-runs '$number_of_runs'
+  --pH '$ph'
+  --temperature '$temperature'
+  --ionic-strength '$ionic_strength'
+  --max-ddg-for-filter '$max_ddg_for_filter'
+  --max-candidates '$max_candidates'
+#if str($repair) == "true":
+  --repair
+#else
+  --no-repair
+#end if
+#if str($include_caution) == "true":
+  --include-caution
+#else
+  --no-include-caution
+#end if
+    ]]></command>
+    <inputs>
+        <param name="candidate_mutations" type="data" format="tabular" label="candidate_mutations.tsv"
+            help="Output from Tool 7 Mutation Designer." />
+        <param name="pdb" type="data" format="pdb" label="Input PDB structure"
+            help="Structure used by FoldX. The default runs RepairPDB before BuildModel." />
+        <param name="foldx_command" type="hidden" value="" />
+        <section name="foldx_options" title="FoldX options" expanded="true">
+            <param name="repair" type="boolean" truevalue="true" falsevalue="false" checked="true"
+                label="Run FoldX RepairPDB before BuildModel" />
+            <param name="number_of_runs" type="integer" min="1" value="5" label="Number of BuildModel runs" />
+            <param name="ph" type="float" value="7.0" label="pH" />
+            <param name="temperature" type="float" value="298" label="Temperature (K)" />
+            <param name="ionic_strength" type="float" value="0.05" label="Ionic strength" />
+            <param name="max_candidates" type="integer" value="0" min="0"
+                label="Maximum candidate mutations to submit to FoldX"
+                help="0 means use all rows in candidate_mutations.tsv." />
+        </section>
+        <section name="filtering" title="Stability filtering" expanded="true">
+            <param name="max_ddg_for_filter" type="float" value="1.0" label="Maximum ΔΔG kept by default"
+                help="Default keeps priority and acceptable mutations: ΔΔG &lt;= 1 kcal/mol." />
+            <param name="include_caution" type="boolean" truevalue="true" falsevalue="false" checked="false"
+                label="Also keep caution mutations with 1 &lt; ΔΔG &lt;= 2 kcal/mol" />
+        </section>
+        <param name="retain_outputs" type="select" multiple="true" display="checkboxes" label="Additional FoldX outputs to keep">
+            <option value="mutant_models" selected="true">Mutant PDB models</option>
+            <option value="raw_ddg" selected="true">Raw FoldX ddG output</option>
+            <option value="repaired_pdb" selected="true">Repaired PDB</option>
+            <option value="individual_list">FoldX individual_list.txt</option>
+            <option value="summary_json">Run summary JSON</option>
+            <option value="archive">Complete FoldX output ZIP</option>
+            <option value="run_log" selected="true">Run log</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="mutation_ddg" format="tabular" from_work_dir="mutation_ddg.tsv"
+            label="${tool.name} on ${on_string}: mutation ddG" />
+        <data name="stability_filtered_mutations" format="tabular" from_work_dir="stability_filtered_mutations.tsv"
+            label="${tool.name} on ${on_string}: stability-filtered mutations" />
+        <collection name="mutant_models" type="list" label="${tool.name} on ${on_string}: mutant models">
+            <filter>retain_outputs and "mutant_models" in retain_outputs</filter>
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.pdb" directory="mutant_models" ext="pdb" />
+        </collection>
+        <data name="raw_ddg" format="txt" from_work_dir="foldx_raw_ddg.fxout"
+            label="${tool.name} on ${on_string}: raw FoldX ddG output">
+            <filter>retain_outputs and "raw_ddg" in retain_outputs</filter>
+        </data>
+        <data name="repaired_pdb" format="pdb" from_work_dir="repaired.pdb"
+            label="${tool.name} on ${on_string}: repaired PDB">
+            <filter>retain_outputs and "repaired_pdb" in retain_outputs and repair == True</filter>
+        </data>
+        <data name="individual_list" format="txt" from_work_dir="individual_list.txt"
+            label="${tool.name} on ${on_string}: FoldX individual_list">
+            <filter>retain_outputs and "individual_list" in retain_outputs</filter>
+        </data>
+        <data name="summary_json" format="json" from_work_dir="summary.json"
+            label="${tool.name} on ${on_string}: run summary">
+            <filter>retain_outputs and "summary_json" in retain_outputs</filter>
+        </data>
+        <data name="archive" format="zip" from_work_dir="foldx_outputs.zip"
+            label="${tool.name} on ${on_string}: complete FoldX outputs">
+            <filter>retain_outputs and "archive" in retain_outputs</filter>
+        </data>
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log">
+            <filter>retain_outputs and "run_log" in retain_outputs</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="6">
+            <param name="candidate_mutations" value="candidate_mutations.tsv" ftype="tabular" />
+            <param name="pdb" value="foldx_input.pdb" ftype="pdb" />
+            <param name="foldx_command" value="mock-foldx" />
+            <param name="number_of_runs" value="1" />
+            <param name="retain_outputs" value="mutant_models,raw_ddg,repaired_pdb,run_log" />
+            <output name="mutation_ddg">
+                <assert_contents>
+                    <has_text text="ddg_kcal_per_mol" />
+                    <has_text text="acceptable" />
+                </assert_contents>
+            </output>
+            <output name="stability_filtered_mutations">
+                <assert_contents>
+                    <has_text text="keep_for_hotspot" />
+                    <has_text text="yes" />
+                </assert_contents>
+            </output>
+            <output name="raw_ddg">
+                <assert_contents>
+                    <has_text text="Mutations" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白半理性改造流程的 Tool 8，用 FoldX `BuildModel` 对 Tool 7 推荐的候选突变进行 ΔΔG 稳定性筛选。
+
+输入
+----
+
+**candidate_mutations.tsv**
+  Tool 7 `Mutation Designer` 输出。工具会读取 `position`、`chain`、`wt_aa`、`suggested_aa`，并自动转换成 FoldX `individual_list.txt` 格式，例如 `VA145L;`。
+
+**Input PDB structure**
+  FoldX 使用的结构。默认先运行 `RepairPDB`，再对修复结构运行 `BuildModel`。
+
+输出
+----
+
+**mutation_ddg.tsv**
+  HotSpot 主输出。每个候选突变一行，包含 `ddg_kcal_per_mol`、`stability_class`、`keep_for_hotspot`、原始候选来源和 FoldX 源行。
+
+**stability_filtered_mutations.tsv**
+  按阈值过滤后的候选突变表，默认保留 `ΔΔG <= 1 kcal/mol` 的突变。若选择 `include caution`，也会保留 `1 < ΔΔG <= 2 kcal/mol`。
+
+**mutant_models/**
+  可选保留 FoldX 生成的突变体 PDB 模型集合。
+
+筛选规则
+--------
+
+- `ΔΔG <= 0 kcal/mol`: `priority`，可能稳定或不损伤稳定性。
+- `0 < ΔΔG <= 1 kcal/mol`: `acceptable`，通常可接受。
+- `1 < ΔΔG <= 2 kcal/mol`: `caution`，需要谨慎，除非功能收益较高。
+- `ΔΔG > 2 kcal/mol`: `high_risk`，通常不建议进入小规模精筛库。
+
+许可说明
+--------
+
+FoldX 是受 license 约束的软件，需由授权用户在服务器上单独安装。本仓库不包含 FoldX 可执行文件或 license 材料。服务器通过 `FOLDX_BINARY` 指向本地授权可执行文件。
+    ]]></help>
+    <citations />
+</tool>

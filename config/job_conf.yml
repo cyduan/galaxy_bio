@@ -222,6 +222,8 @@ tools:
   environment: foldx_local
 - id: foldx_buildmodel
   environment: foldx_local
+- id: stability_predictor
+  environment: foldx_local
 - id: rfd3_design
   environment: foundry_local
 - id: foundry_mpnn
