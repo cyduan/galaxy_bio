@@ -1,0 +1,183 @@
+{
+  "a_galaxy_workflow": "true",
+  "format-version": "0.1",
+  "name": "HotSpot structure-to-smart-library protein engineering",
+  "annotation": "HotSpot Wizard-like workflow: annotate protein structure, search homologs, score conservation, detect pockets/tunnels, rank hotspot residues, design mutations, screen stability with FoldX, and generate final smart-library reports.",
+  "tags": ["protein-engineering", "hotspot", "smart-library", "foldx"],
+  "steps": {
+    "0": {
+      "id": 0,
+      "type": "data_input",
+      "label": "Input protein structure PDB",
+      "name": "Input Dataset",
+      "position": {"left": 0, "top": 0},
+      "tool_state": "{\"name\":\"Input protein structure PDB\"}",
+      "input_connections": {},
+      "outputs": [{"name": "output", "type": "pdb"}]
+    },
+    "1": {
+      "id": 1,
+      "type": "data_input",
+      "label": "Input protein FASTA",
+      "name": "Input Dataset",
+      "position": {"left": 0, "top": 260},
+      "tool_state": "{\"name\":\"Input protein FASTA\"}",
+      "input_connections": {},
+      "outputs": [{"name": "output", "type": "fasta"}]
+    },
+    "2": {
+      "id": 2,
+      "type": "tool",
+      "tool_id": "structure_quality_annotator",
+      "tool_version": "0.3.0",
+      "name": "Structure Quality Annotator",
+      "position": {"left": 300, "top": 0},
+      "tool_state": "{\"run_freesasa\":\"true\",\"buried_threshold\":\"0.09\",\"exposed_threshold\":\"0.36\",\"b_factor_warning\":\"70.0\"}",
+      "input_connections": {"structure": {"id": 0, "output_name": "output"}},
+      "outputs": [
+        {"name": "residue_features", "type": "tabular"},
+        {"name": "quality_report", "type": "html"}
+      ]
+    },
+    "3": {
+      "id": 3,
+      "type": "tool",
+      "tool_id": "homolog_search_msa",
+      "tool_version": "0.2.0",
+      "name": "Homolog Search and MSA",
+      "position": {"left": 300, "top": 260},
+      "tool_state": "{\"subject\":{\"source_mode\":\"swissprot\"},\"search_backend\":\"blastp\",\"filter_backend\":\"cd-hit\",\"msa_backend\":\"mafft\",\"evalue\":\"1e-5\",\"max_target_seqs\":\"500\",\"max_homologs\":\"500\",\"min_identity\":\"20.0\",\"min_query_coverage\":\"40.0\",\"min_subject_coverage\":\"0.0\",\"min_alignment_length\":\"20\",\"identity_threshold\":\"0.9\",\"threads\":\"1\",\"include_query_in_msa\":\"true\",\"exclude_self_hits\":\"true\"}",
+      "input_connections": {"query_fasta": {"id": 1, "output_name": "output"}},
+      "outputs": [
+        {"name": "homologs_fasta", "type": "fasta"},
+        {"name": "filtered_homologs_fasta", "type": "fasta"},
+        {"name": "msa_fasta", "type": "fasta"},
+        {"name": "summary_tsv", "type": "tabular"},
+        {"name": "raw_search_tsv", "type": "tabular"},
+        {"name": "cluster_report", "type": "txt"},
+        {"name": "msa_log", "type": "txt"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "4": {
+      "id": 4,
+      "type": "tool",
+      "tool_id": "conservation_mutability_scorer",
+      "tool_version": "0.1.0",
+      "name": "Conservation / Mutability Scorer",
+      "position": {"left": 600, "top": 260},
+      "tool_state": "{\"backend\":\"auto\",\"reference\":{\"reference_mode\":\"first_record\"},\"chain\":\"A\",\"accepted_aa_min_frequency\":\"0.05\",\"gap_warning_threshold\":\"0.5\"}",
+      "input_connections": {"msa_fasta": {"id": 3, "output_name": "msa_fasta"}},
+      "outputs": [
+        {"name": "residue_conservation", "type": "tabular"},
+        {"name": "rate4site_output", "type": "txt"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "5": {
+      "id": 5,
+      "type": "tool",
+      "tool_id": "pocket_tunnel_finder",
+      "tool_version": "0.2.0",
+      "name": "Pocket and Tunnel Finder",
+      "position": {"left": 600, "top": 0},
+      "tool_state": "{\"run_fpocket\":\"true\",\"run_p2rank\":\"true\",\"run_caver\":\"false\",\"threads\":\"1\",\"min_alpha_spheres\":\"0\",\"top_n_pockets\":\"0\",\"p2rank_config\":\"\",\"caver\":{\"start_mode\":\"auto_centroid\"},\"caver_probe_radius\":\"0.9\",\"caver_shell_radius\":\"3.0\",\"caver_shell_depth\":\"4.0\",\"outputs_to_keep\":{\"keep_pockets_tsv\":\"true\",\"keep_tunnels_tsv\":\"true\",\"keep_residue_annotation\":\"true\",\"keep_pocket_structure\":\"true\",\"keep_fpocket_info\":\"false\",\"keep_p2rank_predictions\":\"false\",\"keep_p2rank_residues\":\"false\",\"keep_caver_config\":\"false\",\"keep_raw_archive\":\"false\",\"keep_run_log\":\"true\"}}",
+      "input_connections": {"input_pdb": {"id": 0, "output_name": "output"}},
+      "outputs": [
+        {"name": "pockets_tsv", "type": "tabular"},
+        {"name": "tunnels_tsv", "type": "tabular"},
+        {"name": "residue_annotation", "type": "tabular"},
+        {"name": "pocket_structure", "type": "pdb"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "6": {
+      "id": 6,
+      "type": "tool",
+      "tool_id": "hotspot_residue_ranker",
+      "tool_version": "0.1.1",
+      "name": "Hotspot Residue Ranker",
+      "position": {"left": 900, "top": 120},
+      "tool_state": "{\"active_site\":{\"active_site_mode\":\"none\"},\"structure_pdb\":{\"structure_pdb_mode\":\"provided\"},\"pocket_or_tunnel_weight\":\"0.25\",\"mutability_weight\":\"0.25\",\"surface_accessibility_weight\":\"0.15\",\"flexibility_weight\":\"0.10\",\"active_site_distance_weight\":\"0.10\",\"catalytic_core_penalty\":\"0.25\",\"highly_conserved_penalty\":\"0.20\",\"buried_core_penalty\":\"0.15\",\"high_conservation_threshold\":\"0.85\",\"buried_threshold\":\"0.09\",\"flexibility_b_factor_threshold\":\"70.0\",\"active_site_near_distance\":\"6.0\",\"active_site_caution_distance\":\"10.0\",\"top_n_report\":\"50\"}",
+      "input_connections": {
+        "structure_features": {"id": 2, "output_name": "residue_features"},
+        "conservation_tsv": {"id": 4, "output_name": "residue_conservation"},
+        "pockets_tsv": {"id": 5, "output_name": "pockets_tsv"},
+        "tunnels_tsv": {"id": 5, "output_name": "tunnels_tsv"},
+        "structure_pdb|structure_pdb_file": {"id": 0, "output_name": "output"}
+      },
+      "outputs": [
+        {"name": "ranked_tsv", "type": "tabular"},
+        {"name": "report_html", "type": "html"},
+        {"name": "viewer_html", "type": "html"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "7": {
+      "id": 7,
+      "type": "tool",
+      "tool_id": "mutation_designer",
+      "tool_version": "0.1.0",
+      "name": "Mutation Designer",
+      "position": {"left": 1200, "top": 120},
+      "tool_state": "{\"reference\":{\"reference_mode\":\"auto\"},\"top_n_hotspots\":\"20\",\"min_hotspot_score\":\"0.0\",\"min_msa_frequency\":\"0.05\",\"max_suggestions_per_site\":\"8\",\"include_natural\":\"true\",\"include_consensus\":\"true\",\"include_conservative\":\"true\",\"include_alanine\":\"true\",\"include_reduced_alphabet\":\"true\",\"reduced_alphabet\":\"ADKSTVFY\",\"max_reduced_suggestions_per_site\":\"2\",\"avoid_cysteine\":\"true\",\"include_wt_in_library\":\"true\",\"smart_library_max_sites\":\"6\"}",
+      "input_connections": {
+        "hotspots_tsv": {"id": 6, "output_name": "ranked_tsv"},
+        "msa_fasta": {"id": 3, "output_name": "msa_fasta"},
+        "protein_sequence": {"id": 1, "output_name": "output"}
+      },
+      "outputs": [
+        {"name": "candidate_mutations", "type": "tabular"},
+        {"name": "smart_library", "type": "tabular"},
+        {"name": "degenerate_codons", "type": "tabular"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "8": {
+      "id": 8,
+      "type": "tool",
+      "tool_id": "stability_predictor",
+      "tool_version": "0.1.0",
+      "name": "Stability Predictor",
+      "position": {"left": 1500, "top": 120},
+      "tool_state": "{\"foldx_command\":\"\",\"repair\":\"true\",\"number_of_runs\":\"5\",\"ph\":\"7.0\",\"temperature\":\"298\",\"ionic_strength\":\"0.05\",\"max_candidates\":\"0\",\"max_ddg_for_filter\":\"1.0\",\"include_caution\":\"false\",\"retain_outputs\":[\"mutant_models\",\"raw_ddg\",\"repaired_pdb\",\"run_log\"]}",
+      "input_connections": {
+        "candidate_mutations": {"id": 7, "output_name": "candidate_mutations"},
+        "pdb": {"id": 0, "output_name": "output"}
+      },
+      "outputs": [
+        {"name": "mutation_ddg", "type": "tabular"},
+        {"name": "stability_filtered_mutations", "type": "tabular"},
+        {"name": "mutant_models", "type": "list"},
+        {"name": "raw_ddg", "type": "txt"},
+        {"name": "repaired_pdb", "type": "pdb"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "9": {
+      "id": 9,
+      "type": "tool",
+      "tool_id": "smart_library_report_generator",
+      "tool_version": "0.1.0",
+      "name": "Smart Library Report Generator",
+      "position": {"left": 1800, "top": 120},
+      "tool_state": "{\"structure\":{\"structure_mode\":\"provided\"},\"project_title\":\"HotSpot Smart Library Design Report\",\"top_n_hotspots\":\"50\",\"top_n_mutations\":\"100\",\"max_viewer_residues\":\"80\"}",
+      "input_connections": {
+        "hotspots_tsv": {"id": 6, "output_name": "ranked_tsv"},
+        "candidate_mutations": {"id": 7, "output_name": "candidate_mutations"},
+        "smart_library": {"id": 7, "output_name": "smart_library"},
+        "degenerate_codons": {"id": 7, "output_name": "degenerate_codons"},
+        "mutation_ddg": {"id": 8, "output_name": "mutation_ddg"},
+        "structure|structure_pdb": {"id": 0, "output_name": "output"}
+      },
+      "outputs": [
+        {"name": "ranked_hotspots", "type": "tabular"},
+        {"name": "ranked_mutations", "type": "tabular"},
+        {"name": "smart_library_design", "type": "tabular"},
+        {"name": "summary_html", "type": "html"},
+        {"name": "structure_viewer_html", "type": "html"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    }
+  }
+}

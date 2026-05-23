@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="hotspot_workflow_preset_advisor" name="HotSpot Workflow Preset Advisor" version="0.1.0" profile="24.0">
+    <description>choose objective-specific parameters for the HotSpot structure-to-smart-library workflow</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_hotspot_workflow_preset_advisor.py'
+  --objective '$objective'
+  --screening-capacity '$screening_capacity'
+  --has-active-site '$has_active_site'
+  --run-caver '$run_caver'
+  --parameters-tsv 'recommended_parameters.tsv'
+  --preset-json 'workflow_preset.json'
+  --workflow-guide-html 'workflow_guide.html'
+    ]]></command>
+    <inputs>
+        <param name="objective" type="select" label="Engineering objective">
+            <option value="balanced" selected="true">Balanced semi-rational design</option>
+            <option value="activity_substrate_specificity">Activity / substrate specificity</option>
+            <option value="stability">Stability improvement</option>
+            <option value="conservative_library">Conservative small library</option>
+            <option value="exploratory_library">Exploratory large library</option>
+        </param>
+        <param name="screening_capacity" type="select" label="Experimental screening capacity">
+            <option value="small">Small: tens of variants</option>
+            <option value="medium" selected="true">Medium: hundreds of variants</option>
+            <option value="large">Large: thousands of variants</option>
+        </param>
+        <param name="has_active_site" type="select" label="Do you have active-site / ligand-near coordinates?">
+            <option value="no" selected="true">No</option>
+            <option value="yes">Yes</option>
+        </param>
+        <param name="run_caver" type="select" label="Run CAVER tunnel analysis?">
+            <option value="auto" selected="true">Auto: yes only if active-site coordinates are available</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="parameters_tsv" format="tabular" from_work_dir="recommended_parameters.tsv"
+            label="${tool.name} on ${on_string}: recommended parameters" />
+        <data name="preset_json" format="json" from_work_dir="workflow_preset.json"
+            label="${tool.name} on ${on_string}: preset JSON" />
+        <data name="workflow_guide_html" format="html" from_work_dir="workflow_guide.html"
+            label="${tool.name} on ${on_string}: workflow guide" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="objective" value="activity_substrate_specificity" />
+            <param name="screening_capacity" value="small" />
+            <param name="has_active_site" value="yes" />
+            <output name="parameters_tsv">
+                <assert_contents>
+                    <has_text text="pocket_or_tunnel_weight" />
+                    <has_text text="run_caver" />
+                </assert_contents>
+            </output>
+            <output name="workflow_guide_html">
+                <assert_contents>
+                    <has_text text="Recommended Workflow Order" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+这是 HotSpot 流程的“智能入口”工具。它不会替代 Tool 2-9，也不会把流程变成黑箱；它根据工程目标和实验筛选容量，生成推荐参数表、JSON preset 和 HTML 操作指南。
+
+建议使用方式
+------------
+
+1. 先运行本工具，选择工程目标。
+2. 导入 `tools/protein_analysis/workflows/hotspot_structure_to_smart_library.ga`。
+3. 根据本工具输出的 `recommended_parameters.tsv` 调整 workflow 中各步骤参数。
+4. 运行完整 workflow，最终查看 `Smart Library Report Generator` 的输出。
+
+目标模式
+--------
+
+- `Activity / substrate specificity`: 更重视 pocket/tunnel、活性位点附近、可突变残基。
+- `Stability improvement`: 更重视 consensus/back-to-consensus、柔性/暴露残基和 FoldX 稳定性。
+- `Conservative small library`: 适合筛选容量小的实验，只保留自然/consensus/保守替换。
+- `Exploratory large library`: 适合高通量筛选，允许 reduced alphabet 和 alanine scanning。
+- `Balanced`: 默认均衡策略。
+    ]]></help>
+    <citations />
+</tool>

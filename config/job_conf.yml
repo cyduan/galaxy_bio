@@ -230,6 +230,8 @@ tools:
   environment: foundry_local
 - id: structure_quality_annotator
   environment: hotspot_wizard_local
+- id: hotspot_workflow_preset_advisor
+  environment: hotspot_wizard_local
 - id: homolog_search_msa
   environment: hotspot_wizard_local
 - id: conservation_mutability_scorer

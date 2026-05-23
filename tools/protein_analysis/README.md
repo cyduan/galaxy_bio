@@ -8,6 +8,8 @@ protein analysis:
   to a configured local Protein-Sol command.
 - `Structure Quality Annotator`: calls DSSP/mkdssp and optionally FreeSASA to
   report residue-level secondary structure, solvent exposure, and quality flags.
+- `HotSpot Workflow Preset Advisor`: chooses objective-specific parameters for
+  the structure-to-smart-library workflow without hiding intermediate tools.
 - `Homolog Search and MSA`: finds homologous proteins, removes redundancy, and
   builds an MSA for conservation/back-to-consensus analysis.
 - `Conservation / Mutability Scorer`: calculates per-residue conservation,
@@ -25,6 +27,52 @@ protein analysis:
 - `Smart Library Report Generator`: merges ranked hotspots, recommended
   mutations, FoldX ΔΔG results, smart-library design, and optional structure
   context into final TSV/HTML reports for experimental planning.
+
+## HotSpot Structure-to-Smart-Library Workflow
+
+The recommended user-facing workflow is:
+
+```text
+tools/protein_analysis/workflows/hotspot_structure_to_smart_library.ga
+```
+
+It connects:
+
+```text
+Protein structure PDB + protein FASTA
+  -> Structure Quality Annotator
+  -> Homolog Search and MSA
+  -> Conservation / Mutability Scorer
+  -> Pocket and Tunnel Finder
+  -> Hotspot Residue Ranker
+  -> Mutation Designer
+  -> Stability Predictor
+  -> Smart Library Report Generator
+```
+
+Use `HotSpot Workflow Preset Advisor` before running the workflow. It produces:
+
+```text
+recommended_parameters.tsv
+workflow_preset.json
+workflow_guide.html
+```
+
+The advisor does not replace the workflow. It gives objective-specific defaults
+for activity/substrate specificity, stability improvement, conservative small
+libraries, exploratory large libraries, or balanced design.
+
+Import the workflow in Galaxy:
+
+1. Go to `Workflow` -> `Import`.
+2. Upload `tools/protein_analysis/workflows/hotspot_structure_to_smart_library.ga`.
+3. Open the imported workflow editor.
+4. Apply values from `recommended_parameters.tsv` to the corresponding steps.
+5. Run with one PDB structure dataset and one protein FASTA dataset.
+
+To make it a public workflow inside a running Galaxy instance, import it as an
+admin user and publish/share it from the Galaxy workflow menu. Repository files
+alone do not automatically create database-backed public workflows in Galaxy.
 
 ## ProtParam install and checks
 
