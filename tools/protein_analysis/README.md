@@ -16,6 +16,9 @@ protein analysis:
   pocket residues for hotspot ranking.
 - `Hotspot Residue Ranker`: integrates structure, conservation, pocket/tunnel,
   and optional active-site evidence into ranked hotspot residues.
+- `Mutation Designer`: recommends hotspot substitutions from MSA variation,
+  consensus residues, conservative replacements, alanine scanning, and reduced
+  amino-acid alphabets; also writes smart-library and degenerate-codon tables.
 
 ## ProtParam install and checks
 
@@ -171,3 +174,31 @@ P2Rank is expected at `/data/tools/p2rank/prank`, and CAVER at
 `/data/tools/caver_3.0/caver/caver.jar`. If installed elsewhere, update
 `FPOCKET_BINARY`, `P2RANK_BINARY`, `JAVA_BINARY`, `CAVER_HOME`, and `CAVER_JAR`
 in `config/job_conf.yml`.
+
+## Mutation Designer checks
+
+Mutation Designer is a pure Python wrapper and does not require additional
+external binaries. It uses the ranked hotspot table from Tool 6, the MSA from
+Tool 3, and the target protein FASTA to propose candidate substitutions.
+
+Run a local smoke test:
+
+```bash
+/data/conda_envs/hotspot_wizard/bin/python \
+  /data/tools/galaxy_bio/tools/protein_analysis/mutation_designer/run_mutation_designer.py \
+  --hotspots-tsv /data/tools/galaxy_bio/tools/protein_analysis/mutation_designer/test-data/hotspot_residue_ranked.tsv \
+  --msa-fasta /data/tools/galaxy_bio/tools/protein_analysis/mutation_designer/test-data/msa.fasta \
+  --protein-sequence /data/tools/galaxy_bio/tools/protein_analysis/mutation_designer/test-data/protein_sequence.fasta \
+  --candidate-mutations /data/test/mutation_designer_selftest/candidate_mutations.tsv \
+  --smart-library /data/test/mutation_designer_selftest/smart_library.tsv \
+  --degenerate-codons /data/test/mutation_designer_selftest/degenerate_codons.tsv \
+  --run-log /data/test/mutation_designer_selftest/run_log.txt
+```
+
+Expected main outputs:
+
+```text
+candidate_mutations.tsv
+smart_library.tsv
+degenerate_codons.tsv
+```

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="mutation_designer" name="Mutation Designer" version="0.1.0" profile="24.0">
+    <description>recommend substitutions and compact smart libraries for ranked hotspot residues</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_mutation_designer.py'
+  --hotspots-tsv '$hotspots_tsv'
+  --msa-fasta '$msa_fasta'
+  --protein-sequence '$protein_sequence'
+  --candidate-mutations 'candidate_mutations.tsv'
+  --smart-library 'smart_library.tsv'
+  --degenerate-codons 'degenerate_codons.tsv'
+  --run-log 'run_log.txt'
+  --top-n-hotspots '$top_n_hotspots'
+  --min-hotspot-score '$min_hotspot_score'
+  --min-msa-frequency '$min_msa_frequency'
+  --max-suggestions-per-site '$max_suggestions_per_site'
+  --smart-library-max-sites '$smart_library_max_sites'
+  --reduced-alphabet '$reduced_alphabet'
+  --max-reduced-suggestions-per-site '$max_reduced_suggestions_per_site'
+#if str($reference.reference_mode) == "sequence_id":
+  --msa-reference-id '$reference.msa_reference_id'
+#end if
+#if str($include_natural) == "true":
+  --include-natural
+#else
+  --no-include-natural
+#end if
+#if str($include_consensus) == "true":
+  --include-consensus
+#else
+  --no-include-consensus
+#end if
+#if str($include_conservative) == "true":
+  --include-conservative
+#else
+  --no-include-conservative
+#end if
+#if str($include_alanine) == "true":
+  --include-alanine
+#else
+  --no-include-alanine
+#end if
+#if str($include_reduced_alphabet) == "true":
+  --include-reduced-alphabet
+#else
+  --no-include-reduced-alphabet
+#end if
+#if str($include_wt_in_library) == "true":
+  --include-wt-in-library
+#else
+  --no-include-wt-in-library
+#end if
+#if str($avoid_cysteine) == "true":
+  --avoid-cysteine
+#else
+  --no-avoid-cysteine
+#end if
+    ]]></command>
+    <inputs>
+        <param name="hotspots_tsv" type="data" format="tabular" label="hotspot_residue_ranked.tsv"
+            help="Output from Tool 6 Hotspot Residue Ranker." />
+        <param name="msa_fasta" type="data" format="fasta" label="msa.fasta"
+            help="Multiple sequence alignment from Tool 3 Homolog Search and MSA." />
+        <param name="protein_sequence" type="data" format="fasta" label="protein_sequence.fasta"
+            help="Ungapped target protein sequence used to map hotspot positions onto MSA columns." />
+        <conditional name="reference">
+            <param name="reference_mode" type="select" label="MSA reference sequence">
+                <option value="auto" selected="true">Auto: exact sequence match, otherwise first MSA record</option>
+                <option value="sequence_id">Specific MSA sequence ID</option>
+            </param>
+            <when value="auto" />
+            <when value="sequence_id">
+                <param name="msa_reference_id" type="text" value="" label="MSA reference ID"
+                    help="Must match the FASTA identifier before the first whitespace." />
+            </when>
+        </conditional>
+        <section name="selection" title="Hotspot and suggestion selection" expanded="true">
+            <param name="top_n_hotspots" type="integer" value="20" min="1" label="Top N hotspot residues to design" />
+            <param name="min_hotspot_score" type="float" value="0.0" label="Minimum hotspot score" />
+            <param name="min_msa_frequency" type="float" value="0.05" min="0" max="1"
+                label="Minimum MSA frequency for natural substitutions" />
+            <param name="max_suggestions_per_site" type="integer" value="8" min="1"
+                label="Maximum suggested amino acids per site" />
+        </section>
+        <section name="sources" title="Mutation sources" expanded="true">
+            <param name="include_natural" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Use naturally observed amino acids from MSA" />
+            <param name="include_consensus" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Use consensus amino acid" />
+            <param name="include_conservative" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Use physicochemical conservative substitutions" />
+            <param name="include_alanine" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Include alanine scanning mutations" />
+            <param name="include_reduced_alphabet" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Include reduced amino acid alphabet suggestions" />
+            <param name="reduced_alphabet" type="text" value="ADKSTVFY" label="Reduced amino acid alphabet"
+                help="One-letter amino acid codes used for exploratory reduced-library suggestions." />
+            <param name="max_reduced_suggestions_per_site" type="integer" value="2" min="0"
+                label="Maximum reduced-alphabet suggestions per site" />
+            <param name="avoid_cysteine" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Avoid new cysteine suggestions unless already selected by WT/library design" />
+        </section>
+        <section name="library" title="Smart-library and degenerate-codon design" expanded="false">
+            <param name="include_wt_in_library" type="boolean" checked="true" truevalue="true" falsevalue="false"
+                label="Include wild-type amino acid in degenerate codon target set" />
+            <param name="smart_library_max_sites" type="integer" value="6" min="1"
+                label="Maximum sites in pooled multi-site smart-library row" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="candidate_mutations" format="tabular" from_work_dir="candidate_mutations.tsv"
+            label="${tool.name} on ${on_string}: candidate mutations" />
+        <data name="smart_library" format="tabular" from_work_dir="smart_library.tsv"
+            label="${tool.name} on ${on_string}: smart library" />
+        <data name="degenerate_codons" format="tabular" from_work_dir="degenerate_codons.tsv"
+            label="${tool.name} on ${on_string}: degenerate codons" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="hotspots_tsv" value="hotspot_residue_ranked.tsv" ftype="tabular" />
+            <param name="msa_fasta" value="msa.fasta" ftype="fasta" />
+            <param name="protein_sequence" value="protein_sequence.fasta" ftype="fasta" />
+            <param name="reference_mode" value="auto" />
+            <param name="top_n_hotspots" value="3" />
+            <param name="min_msa_frequency" value="0.05" />
+            <output name="candidate_mutations">
+                <assert_contents>
+                    <has_text text="suggested_aa" />
+                    <has_text text="natural_observed" />
+                    <has_text text="alanine_scan" />
+                </assert_contents>
+            </output>
+            <output name="smart_library">
+                <assert_contents>
+                    <has_text text="pooled_top" />
+                    <has_text text="single_site" />
+                </assert_contents>
+            </output>
+            <output name="degenerate_codons">
+                <assert_contents>
+                    <has_text text="degenerate_codon" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白半理性改造流程的 Tool 7。它接收 Tool 6 输出的 `hotspot_residue_ranked.tsv`、Tool 3 输出的 `msa.fasta` 以及目标蛋白 FASTA，为 hotspot 位点推荐候选氨基酸替换，并给出 smart library 与简并密码子设计表。
+
+推荐突变来源
+------------
+
+- 同源序列中自然出现过的氨基酸：来自 MSA 每列的氨基酸频率。
+- consensus amino acid：优先采用 Tool 6/Tool 4 表中传递的共识氨基酸。
+- 同理化性质替换：例如疏水换疏水、芳香换芳香、带电换带电。
+- alanine scanning：用于快速检查侧链贡献。
+- reduced amino acid alphabet：用于构建较小但多样的探索性突变库。
+
+主要输出
+--------
+
+**candidate_mutations.tsv**
+  每一行是一个推荐替换，包含 `position`、`wt_aa`、`suggested_aa`、`reason`、`msa_frequency`、`mutation_type`、`hotspot_score` 等字段。
+
+**smart_library.tsv**
+  每个位点的推荐氨基酸集合、理论库容量、推荐简并密码子；第一行还会给出 top sites 的 pooled multi-site library 估算。
+
+**degenerate_codons.tsv**
+  每个位点的简并密码子、覆盖氨基酸、额外引入氨基酸、缺失氨基酸和覆盖率。该表用于后续引物/文库设计复核。
+
+注意事项
+--------
+
+- 这是候选突变设计工具，不等同于稳定性或功能预测。建议后续接 FoldX/Rosetta、实验筛选或文献知识继续过滤。
+- MSA 质量会直接影响 natural/consensus 推荐。低质量 MSA 可能导致推荐偏差。
+- 简并密码子会尽量避免终止密码子，但为了覆盖目标集合，可能引入额外氨基酸；请检查 `extra_aas` 字段。
+    ]]></help>
+    <citations />
+</tool>

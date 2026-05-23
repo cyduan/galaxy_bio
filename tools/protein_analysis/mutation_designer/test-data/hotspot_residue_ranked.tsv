@@ -1,0 +1,5 @@
+rank	residue_id	chain	residue_number	wt_aa	hotspot_score	hotspot_class	recommendation	consensus_aa	accepted_aas
+1	A:4	A	4	S	0.625	Functional hotspot	prioritize_for_function_screen	T	T,S
+2	A:1	A	1	A	0.561	Functional hotspot	prioritize_for_function_screen	A	A,V
+3	A:2	A	2	V	0.504	Functional hotspot	prioritize_for_function_screen	V	V,I
+4	A:3	A	3	L	0.000	Risky hotspot	caution	L	L

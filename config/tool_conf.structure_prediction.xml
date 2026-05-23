@@ -18,6 +18,7 @@
     <tool file="protein_analysis/conservation_mutability_scorer/conservation_mutability_scorer.xml" />
     <tool file="protein_analysis/pocket_tunnel_finder/pocket_tunnel_finder.xml" />
     <tool file="protein_analysis/hotspot_residue_ranker/hotspot_residue_ranker.xml" />
+    <tool file="protein_analysis/mutation_designer/mutation_designer.xml" />
   </section>
   <section id="protein_stability" name="Protein Stability">
     <tool file="protein_stability/foldx/foldx_stability.xml" />
