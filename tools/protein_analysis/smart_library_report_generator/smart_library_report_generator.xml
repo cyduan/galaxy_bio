@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="smart_library_report_generator" name="Smart Library Report Generator" version="0.1.0" profile="24.0">
+    <description>merge HotSpot results into final mutation, library, and structure-viewer reports</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_smart_library_report_generator.py'
+  --hotspots-tsv '$hotspots_tsv'
+  --candidate-mutations '$candidate_mutations'
+  --smart-library '$smart_library'
+  --degenerate-codons '$degenerate_codons'
+  --mutation-ddg '$mutation_ddg'
+  --ranked-hotspots 'ranked_hotspots.tsv'
+  --ranked-mutations 'ranked_mutations.tsv'
+  --smart-library-design 'smart_library_design.tsv'
+  --summary-html 'summary.html'
+  --structure-viewer-html 'structure_viewer.html'
+  --run-log 'run_log.txt'
+  --project-title '$project_title'
+  --top-n-hotspots '$top_n_hotspots'
+  --top-n-mutations '$top_n_mutations'
+  --max-viewer-residues '$max_viewer_residues'
+#if str($structure.structure_mode) == "provided":
+  --structure-pdb '$structure.structure_pdb'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="hotspots_tsv" type="data" format="tabular" label="hotspot_residue_ranked.tsv"
+            help="Output from Tool 6 Hotspot Residue Ranker." />
+        <param name="candidate_mutations" type="data" format="tabular" label="candidate_mutations.tsv"
+            help="Output from Tool 7 Mutation Designer." />
+        <param name="smart_library" type="data" format="tabular" label="smart_library.tsv"
+            help="Output from Tool 7 Mutation Designer." />
+        <param name="degenerate_codons" type="data" format="tabular" label="degenerate_codons.tsv"
+            help="Output from Tool 7 Mutation Designer." />
+        <param name="mutation_ddg" type="data" format="tabular" label="mutation_ddg.tsv"
+            help="Output from Tool 8 Stability Predictor." />
+        <conditional name="structure">
+            <param name="structure_mode" type="select" label="Optional structure for viewer">
+                <option value="none" selected="true">No structure PDB</option>
+                <option value="provided">Use structure PDB</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="structure_pdb" type="data" format="pdb" label="Structure PDB" />
+            </when>
+        </conditional>
+        <section name="report_options" title="Report options" expanded="true">
+            <param name="project_title" type="text" value="HotSpot Smart Library Design Report" label="Project/report title" />
+            <param name="top_n_hotspots" type="integer" value="50" min="1" label="Top hotspot rows in reports" />
+            <param name="top_n_mutations" type="integer" value="100" min="1" label="Top mutation rows in reports" />
+            <param name="max_viewer_residues" type="integer" value="80" min="1" label="Maximum residues highlighted in structure viewer" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="ranked_hotspots" format="tabular" from_work_dir="ranked_hotspots.tsv"
+            label="${tool.name} on ${on_string}: ranked hotspots" />
+        <data name="ranked_mutations" format="tabular" from_work_dir="ranked_mutations.tsv"
+            label="${tool.name} on ${on_string}: ranked mutations" />
+        <data name="smart_library_design" format="tabular" from_work_dir="smart_library_design.tsv"
+            label="${tool.name} on ${on_string}: smart library design" />
+        <data name="summary_html" format="html" from_work_dir="summary.html"
+            label="${tool.name} on ${on_string}: summary report" />
+        <data name="structure_viewer_html" format="html" from_work_dir="structure_viewer.html"
+            label="${tool.name} on ${on_string}: structure viewer" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="6">
+            <param name="hotspots_tsv" value="hotspot_residue_ranked.tsv" ftype="tabular" />
+            <param name="candidate_mutations" value="candidate_mutations.tsv" ftype="tabular" />
+            <param name="smart_library" value="smart_library.tsv" ftype="tabular" />
+            <param name="degenerate_codons" value="degenerate_codons.tsv" ftype="tabular" />
+            <param name="mutation_ddg" value="mutation_ddg.tsv" ftype="tabular" />
+            <param name="structure_mode" value="provided" />
+            <param name="structure_pdb" value="foldx_input.pdb" ftype="pdb" />
+            <output name="ranked_hotspots">
+                <assert_contents>
+                    <has_text text="best_ddg_kcal_per_mol" />
+                    <has_text text="functional_hotspot" />
+                </assert_contents>
+            </output>
+            <output name="ranked_mutations">
+                <assert_contents>
+                    <has_text text="foldx_mutation" />
+                    <has_text text="acceptable" />
+                </assert_contents>
+            </output>
+            <output name="summary_html">
+                <assert_contents>
+                    <has_text text="Final HotSpot smart-library report" />
+                </assert_contents>
+            </output>
+            <output name="structure_viewer_html">
+                <assert_contents>
+                    <has_text text="PyMOL" />
+                    <has_text text="Hotspot Residues" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具是 HotSpot Wizard-like 蛋白半理性改造流程的 Tool 9，用于生成最终给实验人员查看的突变库设计报告。它不会重新运行 FoldX 或结构分析，而是合并前面步骤的结果并做排序、解释和可视化辅助。
+
+输入
+----
+
+- `hotspot_residue_ranked.tsv`: Tool 6 输出，包含 hotspot 位点、结构上下文、保守性和 mutability。
+- `candidate_mutations.tsv`: Tool 7 输出，包含推荐氨基酸替换及来源。
+- `smart_library.tsv` 与 `degenerate_codons.tsv`: Tool 7 输出，包含文库大小和简并密码子方案。
+- `mutation_ddg.tsv`: Tool 8 输出，包含 FoldX ΔΔG 和稳定性分类。
+- `Structure PDB`: 可选。提供后会嵌入 `structure_viewer.html`，并生成 PyMOL/ChimeraX 选择命令。
+
+输出
+----
+
+**ranked_hotspots.tsv**
+  推荐突变位点表，包含功能/稳定性/consensus 等策略、pocket/tunnel/surface/core 信息、保守性分数、最佳突变、ΔΔG、简并密码子和库容量。
+
+**ranked_mutations.tsv**
+  推荐氨基酸替换表，合并候选来源、FoldX ΔΔG、稳定性分类和实验建议。
+
+**smart_library_design.tsv**
+  实验文库设计表，包含每个文库的位点、氨基酸集合、理论容量、简并密码子和稳定性风险统计。
+
+**summary.html**
+  面向实验人员的最终 HTML 报告。
+
+**structure_viewer.html**
+  结构查看和 hotspot selection 页面。若浏览器能加载 3Dmol.js，会自动显示结构；否则仍可使用 PyMOL/ChimeraX 命令。
+
+注意事项
+--------
+
+- 该报告是实验设计汇总，不替代实验验证。
+- ΔΔG 解释沿用 Tool 8：`priority`、`acceptable`、`caution`、`high_risk`。
+- 若不提供 PDB，structure viewer 仍会输出热点表和选择命令，但不会嵌入结构坐标。
+    ]]></help>
+    <citations />
+</tool>

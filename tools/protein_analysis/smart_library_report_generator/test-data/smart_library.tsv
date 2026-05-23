@@ -1,0 +1,5 @@
+library_id	design_type	positions	residue_ids	wt_aas	designed_aas	mutation_count	theoretical_variant_count	recommended_degenerate_codons	coverage_fraction	hotspot_classes	rationale	notes
+pooled_top_3_sites	pooled_multi_site	1;2;3	A:1;A:2;A:3	A;V;L	A,V;D,V;L,P	6	16	GCN;GAY;CTN		Functional hotspot;Functional hotspot;Stability hotspot	pooled design for top sites	split if too large
+site_A1	single_site	1	A:1	A	A,V	1	4	GCN	1	Functional hotspot	accepted_aa,conservative	
+site_A2	single_site	2	A:2	V	D,V	1	2	GAY	1	Functional hotspot	reduced_alphabet	
+site_A3	single_site	3	A:3	L	L,P	1	4	CTN	1	Stability hotspot	reduced_alphabet	

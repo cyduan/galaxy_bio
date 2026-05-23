@@ -22,6 +22,7 @@
     <tool file="protein_stability/foldx/foldx_stability.xml" />
     <tool file="protein_stability/foldx/foldx_buildmodel.xml" />
     <tool file="protein_analysis/stability_predictor/stability_predictor.xml" />
+    <tool file="protein_analysis/smart_library_report_generator/smart_library_report_generator.xml" />
   </section>
   <section id="structure_prediction" name="Structure Prediction">
     <tool file="structure_prediction/esmfold/esmfold.xml" />

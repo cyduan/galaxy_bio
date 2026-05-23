@@ -1,0 +1,4 @@
+position	residue_id	chain	wt_aa	suggested_aa	reason	msa_frequency	mutation_type	source	hotspot_rank	hotspot_score	hotspot_class	consensus_aa	accepted_aas	notes
+1	A:1	A	A	V	accepted_aa/physicochemical_conservative	0.25	conservative	accepted_aa,conservative	1	0.8	Functional hotspot	A	A,V	
+2	A:2	A	V	D	reduced_alphabet		exploratory	reduced_alphabet	2	0.7	Functional hotspot	V	V,I	
+3	A:3	A	L	P	reduced_alphabet		exploratory	reduced_alphabet	3	0.6	Stability hotspot	L	L	

@@ -1,0 +1,4 @@
+position	residue_id	wt_aa	designed_aas	degenerate_codon	covered_aas	exact_match	extra_aas	missing_aas	codon_count	coverage_fraction	notes
+1	A:1	A	A,V	GCN	A,V	no		4	1	
+2	A:2	V	D,V	GAY	D,V	no		2	1	
+3	A:3	L	L,P	CTN	L,P	no		4	1	

@@ -238,6 +238,8 @@ tools:
   environment: hotspot_wizard_local
 - id: hotspot_residue_ranker
   environment: hotspot_wizard_local
+- id: smart_library_report_generator
+  environment: hotspot_wizard_local
 - id: promoter_window_normalizer
   environment: promoter_design_local
 - id: promoter_motif_scanner

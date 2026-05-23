@@ -1,0 +1,4 @@
+rank	residue_id	chain	residue_number	wt_aa	hotspot_score	hotspot_class	recommendation	in_pocket	pocket_ids	in_tunnel	tunnel_ids	exposure_class	secondary_structure_class	relative_asa	conservation_score	mutability_score	consensus_aa	accepted_aas	notes
+1	A:1	A	1	A	0.80	Functional hotspot	prioritize_for_function_screen	yes	fpocket:1	no		exposed	coil	0.45	0.30	0.70	A	A,V	pocket residue
+2	A:2	A	2	V	0.70	Functional hotspot	prioritize_for_function_screen	yes	fpocket:1	yes	caver:1	intermediate	coil	0.28	0.60	0.40	V	V,I	pocket and tunnel residue
+3	A:3	A	3	L	0.60	Stability hotspot	review	no		no		buried	helix	0.04	0.95	0.05	L	L	conserved buried site

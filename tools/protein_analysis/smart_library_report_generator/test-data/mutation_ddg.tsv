@@ -1,0 +1,4 @@
+mutation_id	position	chain	wt_aa	mutant_aa	foldx_mutation	ddg_kcal_per_mol	stability_class	keep_for_hotspot	filter_reason	hotspot_rank	hotspot_score	hotspot_class	mutation_type	candidate_reason	msa_frequency	source	foldx_source_row	warning
+A1A_to_V	1	A	A	V	AA1V	0.5	acceptable	yes	ddg_0_to_1	1	0.8	Functional hotspot	conservative	accepted_aa/physicochemical_conservative	0.25	accepted_aa,conservative	foldx_row	
+A2V_to_D	2	A	V	D	VA2D	1.5	caution	no	ddg_1_to_2	2	0.7	Functional hotspot	exploratory	reduced_alphabet		reduced_alphabet	foldx_row	
+A3L_to_P	3	A	L	P	LA3P	2.5	high_risk	no	ddg_gt_2	3	0.6	Stability hotspot	exploratory	reduced_alphabet		reduced_alphabet	foldx_row	

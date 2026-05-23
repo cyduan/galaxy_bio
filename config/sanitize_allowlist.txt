@@ -3,3 +3,4 @@
 # do not add tools that pass user-authored HTML through unchanged.
 structure_quality_annotator
 hotspot_residue_ranker
+smart_library_report_generator

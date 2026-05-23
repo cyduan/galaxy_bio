@@ -22,6 +22,9 @@ protein analysis:
 - `Stability Predictor`: converts candidate mutations into FoldX
   `individual_list.txt`, runs RepairPDB/BuildModel, and formats ΔΔG results for
   HotSpot filtering while optionally preserving raw FoldX outputs.
+- `Smart Library Report Generator`: merges ranked hotspots, recommended
+  mutations, FoldX ΔΔG results, smart-library design, and optional structure
+  context into final TSV/HTML reports for experimental planning.
 
 ## ProtParam install and checks
 
@@ -268,4 +271,41 @@ The HotSpot filtering categories are:
 0 < ΔΔG <= 1 kcal/mol acceptable
 1 < ΔΔG <= 2 kcal/mol caution
 ΔΔG > 2 kcal/mol      high_risk
+```
+
+## Smart Library Report Generator checks
+
+The final report generator is a pure Python summarization wrapper. It consumes
+Tool 6, Tool 7, and Tool 8 outputs and writes three final TSV tables plus two
+HTML reports.
+
+Run a local smoke test:
+
+```bash
+mkdir -p /data/test/smart_library_report_selftest
+cd /data/tools/galaxy_bio
+/data/conda_envs/hotspot_wizard/bin/python \
+  tools/protein_analysis/smart_library_report_generator/run_smart_library_report_generator.py \
+  --hotspots-tsv tools/protein_analysis/smart_library_report_generator/test-data/hotspot_residue_ranked.tsv \
+  --candidate-mutations tools/protein_analysis/smart_library_report_generator/test-data/candidate_mutations.tsv \
+  --smart-library tools/protein_analysis/smart_library_report_generator/test-data/smart_library.tsv \
+  --degenerate-codons tools/protein_analysis/smart_library_report_generator/test-data/degenerate_codons.tsv \
+  --mutation-ddg tools/protein_analysis/smart_library_report_generator/test-data/mutation_ddg.tsv \
+  --structure-pdb tools/protein_analysis/smart_library_report_generator/test-data/foldx_input.pdb \
+  --ranked-hotspots /data/test/smart_library_report_selftest/ranked_hotspots.tsv \
+  --ranked-mutations /data/test/smart_library_report_selftest/ranked_mutations.tsv \
+  --smart-library-design /data/test/smart_library_report_selftest/smart_library_design.tsv \
+  --summary-html /data/test/smart_library_report_selftest/summary.html \
+  --structure-viewer-html /data/test/smart_library_report_selftest/structure_viewer.html \
+  --run-log /data/test/smart_library_report_selftest/run_log.txt
+```
+
+Expected final outputs:
+
+```text
+ranked_hotspots.tsv
+ranked_mutations.tsv
+smart_library_design.tsv
+summary.html
+structure_viewer.html
 ```
