@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<tool id="hotspot_residue_ranker" name="Hotspot Residue Ranker" version="0.1.0" profile="24.0">
+<tool id="hotspot_residue_ranker" name="Hotspot Residue Ranker" version="0.1.1" profile="24.0">
     <description>integrate structure, conservation, pocket, tunnel, and active-site evidence into ranked hotspot residues</description>
     <requirements>
         <requirement type="package">python</requirement>
@@ -17,8 +17,8 @@
 #if str($active_site.active_site_mode) == "provided":
   --active-site-tsv '$active_site.active_site_tsv'
 #end if
-#if str($structure_pdb_optional) not in ["", "None"]:
-  --structure-pdb '$structure_pdb_optional'
+#if str($structure_pdb.structure_pdb_mode) == "provided":
+  --structure-pdb '$structure_pdb.structure_pdb_file'
 #end if
   --pocket-or-tunnel-weight '$pocket_or_tunnel_weight'
   --mutability-weight '$mutability_weight'
@@ -55,7 +55,17 @@
                     help="Recommended columns: site_id, chain, residue_number, residue_name, role. Optional coordinate columns: x, y, z." />
             </when>
         </conditional>
-        <param name="structure_pdb_optional" type="data" format="pdb" optional="true" label="Optional structure PDB for viewer note" />
+        <conditional name="structure_pdb">
+            <param name="structure_pdb_mode" type="select" label="Optional structure PDB for viewer note">
+                <option value="none" selected="true">No structure PDB</option>
+                <option value="provided">Use structure PDB</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="structure_pdb_file" type="data" format="pdb" label="Structure PDB"
+                    help="Optional. Used only to record the source structure in the HTML viewer scaffold." />
+            </when>
+        </conditional>
         <section name="weights" title="Scoring weights" expanded="false">
             <param name="pocket_or_tunnel_weight" type="float" value="0.25" label="Pocket/tunnel weight" />
             <param name="mutability_weight" type="float" value="0.25" label="Mutability weight" />
