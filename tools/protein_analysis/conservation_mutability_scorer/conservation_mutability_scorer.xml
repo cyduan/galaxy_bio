@@ -87,6 +87,15 @@
 **Input MSA FASTA**
   Tool 3 `Homolog Search and MSA` 输出的 `msa.fasta`。建议 MSA 中包含目标 query/reference sequence，默认使用第一条序列作为目标编号参考。
 
+输入格式和类型要求
+------------------
+
+- Galaxy datatype: `fasta`。
+- 文件必须是已经对齐的蛋白 MSA，即所有 FASTA 记录长度相同，可包含 `-` 或 `.` 作为 gap。
+- 第一条序列默认被视为目标/参考序列。若目标序列不是第一条，请选择 `Specific sequence ID` 并填写目标 FASTA ID。
+- MSA 中的参考序列应与结构链序列尽量一致，否则 `residue_index`、`wt_aa` 与结构残基编号可能错位。
+- 至少需要 2 条序列；实际分析建议更多同源序列以获得可靠保守性。
+
 参数说明
 --------
 
@@ -113,6 +122,13 @@
 
 **run log**
   记录 Rate4Site 命令、回退原因、参考序列、序列数和 alignment length。
+
+输出如何进入后续流程
+--------------------
+
+- `residue_conservation.tsv` 连接到 Tool 6 `Hotspot Residue Ranker`。
+- `consensus_aa` 和 `accepted_aas` 会被后续 Tool 7 `Mutation Designer` 用于 consensus/back-to-consensus 与自然可接受替换设计。
+- `rate4site_raw_output.txt` 和 `run_log.txt` 用于审计，不是后续自动流程的主要输入。
 
 评分解释
 --------

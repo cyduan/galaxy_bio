@@ -82,6 +82,15 @@
 **Protein structure PDB/mmCIF**
   来自结构准备工具、用户上传的 PDB/mmCIF、AlphaFold/ESMFold/ColabFold 输出，或其他结构来源。DSSP 对 PDB 格式较敏感，本 wrapper 会尝试清理 Galaxy `.dat` 上传文件、补充基础 PDB 头信息，并在必要时用坐标记录重建一个更干净的 PDB 后重试。
 
+输入格式和类型要求
+------------------
+
+- Galaxy datatype: `pdb`, `cif` 或 `mmcif`。
+- 文件内容必须包含可解析的原子坐标。PDB 文件至少应包含 `ATOM` 或 `HETATM` 记录；mmCIF 文件应为标准 mmCIF 文本。
+- 适合输入：RCSB PDB 下载结构、AlphaFold/ESMFold/ColabFold PDB、用户修复后的结构、前序结构准备工具输出。
+- 不适合输入：纯 FASTA、压缩包、只含序列没有坐标的文本、严重缺失坐标列的 PDB。
+- 若结构中有多条链，本工具会逐链输出残基特征，后续工具需要确保 chain 与目标序列编号一致。
+
 参数说明
 --------
 
@@ -105,6 +114,12 @@
 
 **quality_report.html**
   HTML 概览报告，统计残基数、二级结构组成、DSSP/FreeSASA 暴露度分布和质量标记，并展示前 50 个残基。
+
+输出如何进入后续流程
+--------------------
+
+- `residue_structure_features.tsv` 直接连接到 Tool 6 `Hotspot Residue Ranker` 的 `residue_structure_features.tsv` 输入。
+- `quality_report.html` 供人工检查结构质量、暴露度分布和高 B-factor/pLDDT 区域，通常不作为后续自动计算输入。
 
 注意事项
 --------

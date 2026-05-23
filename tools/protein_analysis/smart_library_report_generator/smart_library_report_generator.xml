@@ -110,11 +110,17 @@
 输入
 ----
 
-- `hotspot_residue_ranked.tsv`: Tool 6 输出，包含 hotspot 位点、结构上下文、保守性和 mutability。
-- `candidate_mutations.tsv`: Tool 7 输出，包含推荐氨基酸替换及来源。
-- `smart_library.tsv` 与 `degenerate_codons.tsv`: Tool 7 输出，包含文库大小和简并密码子方案。
-- `mutation_ddg.tsv`: Tool 8 输出，包含 FoldX ΔΔG 和稳定性分类。
-- `Structure PDB`: 可选。提供后会嵌入 `structure_viewer.html`，并生成 PyMOL/ChimeraX 选择命令。
+- `hotspot_residue_ranked.tsv`: Galaxy datatype 为 `tabular`，Tool 6 输出，包含 hotspot 位点、结构上下文、保守性和 mutability。
+- `candidate_mutations.tsv`: Galaxy datatype 为 `tabular`，Tool 7 输出，包含推荐氨基酸替换及来源。
+- `smart_library.tsv`: Galaxy datatype 为 `tabular`，Tool 7 输出，包含单点或多点 library 组合、理论库容量和设计理由。
+- `degenerate_codons.tsv`: Galaxy datatype 为 `tabular`，Tool 7 输出，包含每个位点的简并密码子、覆盖氨基酸、额外氨基酸和覆盖率。
+- `mutation_ddg.tsv`: Galaxy datatype 为 `tabular`，Tool 8 输出，包含 FoldX ΔΔG 和稳定性分类。
+- `Structure PDB`: Galaxy datatype 为 `pdb`，可选。提供后会嵌入 `structure_viewer.html`，并生成 PyMOL/ChimeraX 选择命令。
+
+输入一致性要求
+--------------
+
+所有 TSV 应来自同一轮 HotSpot workflow，且使用相同的 chain/residue numbering。若混用不同结构、不同 MSA 或不同编号体系，最终报告可能把突变、ΔΔG 和结构上下文错误合并。
 
 输出
 ----
@@ -133,6 +139,13 @@
 
 **structure_viewer.html**
   结构查看和 hotspot selection 页面。若浏览器能加载 3Dmol.js，会自动显示结构；否则仍可使用 PyMOL/ChimeraX 命令。
+
+输出使用建议
+------------
+
+- 给实验人员优先查看 `summary.html`、`ranked_mutations.tsv` 和 `smart_library_design.tsv`。
+- `ranked_hotspots.tsv` 适合讨论位点选择逻辑。
+- `structure_viewer.html` 适合定位候选位点，并把 PyMOL/ChimeraX selection 复制到结构软件中复核。
 
 注意事项
 --------

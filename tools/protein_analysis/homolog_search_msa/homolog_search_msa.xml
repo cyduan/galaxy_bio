@@ -185,6 +185,25 @@
 3. 使用 CD-HIT 或 MMseqs2 cluster 去冗余，默认保留 90% identity 代表序列。
 4. 使用 MAFFT 或 MUSCLE 构建 MSA。
 
+输入格式和类型要求
+------------------
+
+**Query protein FASTA**
+  Galaxy datatype 为 `fasta`。必须是蛋白质氨基酸序列，建议只放目标蛋白或目标链序列。可由 `PDB to FASTA` 从结构提取，也可由用户上传。序列 ID 应尽量简短稳定，例如 `target_chain_A`。
+
+**Subject/database protein FASTA**
+  仅在选择 `Uploaded FASTA from history` 时需要。Galaxy datatype 为 `fasta`，内容是候选同源序列、物种蛋白组、家族序列集或预筛选 homolog set。
+
+**Server database**
+  选择 Swiss-Prot/UniRef90/UniRef50 时，用户不需要上传 subject FASTA；服务器通过 `job_conf.yml` 中的环境变量定位数据库 FASTA 和 BLAST DB prefix。
+
+输入质量建议
+------------
+
+- 如果目标蛋白有多个结构域，建议先按结构域或功能域拆分后再搜索，否则 MSA 可能混入不相关区域。
+- 如果目标序列来自 PDB，需要确认是否缺失 N/C 端或 loop；缺失片段会影响后续 conservation 与结构编号匹配。
+- 如果已有人工整理的同源序列集，优先使用 Uploaded FASTA + `Use all subject sequences directly`，可减少数据库噪音。
+
 参数说明
 --------
 
@@ -217,6 +236,13 @@
 
 **homolog_summary.tsv**
   每条保留同源序列的搜索命中、过滤、聚类和 MSA 状态汇总。
+
+输出如何进入后续流程
+--------------------
+
+- `msa.fasta` 连接到 Tool 4 `Conservation / Mutability Scorer`。
+- `msa.fasta` 同时连接到 Tool 7 `Mutation Designer`，用于统计 naturally observed amino acids。
+- `homologs.fasta`、`filtered_homologs.fasta`、`raw_search.tsv` 和日志文件主要用于人工复核搜索质量。
 
 **raw_search.tsv**
   标准化搜索结果表，保留 BLAST/MMseqs 原始命中信息的主要字段。

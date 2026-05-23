@@ -74,6 +74,32 @@ To make it a public workflow inside a running Galaxy instance, import it as an
 admin user and publish/share it from the Galaxy workflow menu. Repository files
 alone do not automatically create database-backed public workflows in Galaxy.
 
+### HotSpot Tool Input/Output Quick Reference
+
+| Step | Galaxy tool | Main input type | Main input file | Main output files | Downstream use |
+| --- | --- | --- | --- | --- | --- |
+| Advisor | HotSpot Workflow Preset Advisor | form parameters only | no dataset required | `recommended_parameters.tsv`, `workflow_preset.json`, `workflow_guide.html` | choose objective-specific workflow parameters |
+| Tool 2 | Structure Quality Annotator | `pdb`, `cif`, `mmcif` | protein structure with atom coordinates | `residue_structure_features.tsv`, `quality_report.html` | structure features for hotspot ranking |
+| Tool 3 | Homolog Search and MSA | `fasta` | target protein FASTA plus server/uploaded homolog database | `homologs.fasta`, `filtered_homologs.fasta`, `msa.fasta`, `homolog_summary.tsv` | MSA for conservation and mutation design |
+| Tool 4 | Conservation / Mutability Scorer | aligned `fasta` | `msa.fasta` from Tool 3 | `residue_conservation.tsv`, raw Rate4Site output, log | conservation, mutability, consensus, accepted AAs |
+| Tool 5 | Pocket and Tunnel Finder | `pdb` | protein structure PDB | `pockets.tsv`, `tunnels.tsv`, `residue_pocket_tunnel_annotation.tsv`, `pocket_structure.pdb` | functional-region evidence for hotspot ranking |
+| Tool 6 | Hotspot Residue Ranker | `tabular` plus optional `pdb` | Tool 2, Tool 4, Tool 5 TSVs | `hotspot_residue_ranked.tsv`, `hotspot_report.html`, `hotspot_viewer.html` | ranked hotspot residues for mutation design |
+| Tool 7 | Mutation Designer | `tabular`, aligned `fasta`, sequence `fasta` | Tool 6 hotspots, Tool 3 MSA, target protein FASTA | `candidate_mutations.tsv`, `smart_library.tsv`, `degenerate_codons.tsv` | candidate substitutions and codon/library design |
+| Tool 8 | Stability Predictor | `tabular`, `pdb` | Tool 7 candidates plus FoldX-compatible PDB | `mutation_ddg.tsv`, `stability_filtered_mutations.tsv`, optional FoldX raw outputs/models | FoldX stability filtering |
+| Tool 9 | Smart Library Report Generator | `tabular` plus optional `pdb` | Tool 6/7/8 TSVs plus optional structure | `ranked_hotspots.tsv`, `ranked_mutations.tsv`, `smart_library_design.tsv`, `summary.html`, `structure_viewer.html` | final experimental design report |
+
+For routine users, the most important final files are:
+
+```text
+summary.html
+ranked_mutations.tsv
+smart_library_design.tsv
+structure_viewer.html
+```
+
+Intermediate files are intentionally preserved for auditability and expert
+debugging, but they do not all need to be shown to experimental collaborators.
+
 ## ProtParam install and checks
 
 The ProtParam wrapper uses Biopython `ProteinAnalysis`.

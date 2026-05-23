@@ -164,6 +164,26 @@ hotspot_score =
 - `pockets.tsv` 与 `tunnels.tsv`: 来自 Pocket and Tunnel Finder。
 - `optional_active_site.tsv`: 可选。推荐列：`site_id, chain, residue_number, residue_name, role`。如果某行表示催化核心，可把 role 写为 `catalytic`。
 
+输入格式和类型要求
+------------------
+
+**residue_structure_features.tsv**
+  Galaxy datatype 为 `tabular`。必须包含残基编号、链、氨基酸、暴露度、二级结构和质量标记等列。通常来自 Tool 2。
+
+**residue_conservation.tsv**
+  Galaxy datatype 为 `tabular`。必须包含 `residue_index`、`chain`、`wt_aa`、`conservation_score`、`mutability_score`、`consensus_aa`、`accepted_aas` 等列。通常来自 Tool 4。
+
+**pockets.tsv / tunnels.tsv**
+  Galaxy datatype 为 `tabular`。来自 Tool 5。若 CAVER 未运行，`tunnels.tsv` 可以是 `not_computed` 占位表，工具仍可运行。
+
+**optional_active_site.tsv**
+  Galaxy datatype 为 `tabular`，可选。用于标记 catalytic residues 或必须保护的功能核心位点。若没有该文件，工具仍会根据高保守性和埋藏状态惩罚高风险位点。
+
+编号匹配要求
+------------
+
+后续整合依赖 chain + residue number。请尽量保证结构特征表、保守性表、口袋/通道表使用同一条链和同一套 residue numbering。若 PDB 缺失残基或 MSA 参考序列不同，可能导致热点匹配偏移。
+
 输出说明
 --------
 
@@ -175,6 +195,12 @@ hotspot_score =
 
 **hotspot_viewer.html**
   轻量 HTML viewer scaffold，列出 top hotspot residue IDs。可配合 Galaxy 的 PDB 可视化工具使用。
+
+输出如何进入后续流程
+--------------------
+
+- `hotspot_residue_ranked.tsv` 连接到 Tool 7 `Mutation Designer`。
+- `hotspot_report.html` 和 `hotspot_viewer.html` 供人工查看与复核，已经加入 HTML allowlist，可在 Galaxy 中直接显示。
 
 注意事项
 --------

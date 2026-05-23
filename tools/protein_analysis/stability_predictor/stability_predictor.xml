@@ -147,6 +147,14 @@ python '$__tool_directory__/run_stability_predictor.py'
 **Input PDB structure**
   FoldX 使用的结构。默认先运行 `RepairPDB`，再对修复结构运行 `BuildModel`。
 
+输入格式和类型要求
+------------------
+
+- `candidate_mutations.tsv`: Galaxy datatype 为 `tabular`。通常来自 Tool 7。至少需要 `position`、`chain`、`wt_aa`、`suggested_aa`；工具会自动生成 FoldX 语法，例如 `VA145L;`。
+- `Input PDB structure`: Galaxy datatype 为 `pdb`。必须是 FoldX 可解析的 PDB 坐标文件，残基编号和链 ID 必须与候选突变表一致。
+- FoldX 对结构格式比较严格。建议保留默认 `RepairPDB`，尤其是来自 RCSB、AlphaFold/ESMFold 或用户编辑过的结构。
+- 如果 PDB 中链 ID 或 residue number 与候选表不一致，FoldX 可能失败或计算错误位点。
+
 输出
 ----
 
@@ -158,6 +166,24 @@ python '$__tool_directory__/run_stability_predictor.py'
 
 **mutant_models/**
   可选保留 FoldX 生成的突变体 PDB 模型集合。
+
+其他可选输出
+------------
+
+根据 `Additional FoldX outputs to keep` 复选框，还可以保留：
+
+- `raw FoldX ddG output`: FoldX 原始 BuildModel 表。
+- `repaired.pdb`: RepairPDB 后的结构。
+- `individual_list.txt`: 自动生成的 FoldX 突变输入文件。
+- `summary.json`: 本次运行参数和输出汇总。
+- `foldx_outputs.zip`: 完整 FoldX 工作目录归档。
+- `run_log.txt`: 命令、stdout/stderr 和错误信息。
+
+输出如何进入后续流程
+--------------------
+
+- `mutation_ddg.tsv` 连接到 Tool 9 `Smart Library Report Generator`。
+- `stability_filtered_mutations.tsv` 是稳定性过滤后的候选表，适合人工下载或作为后续实验候选输入。
 
 筛选规则
 --------

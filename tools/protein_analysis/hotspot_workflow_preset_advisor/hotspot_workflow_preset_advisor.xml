@@ -69,6 +69,16 @@
 
 这是 HotSpot 流程的“智能入口”工具。它不会替代 Tool 2-9，也不会把流程变成黑箱；它根据工程目标和实验筛选容量，生成推荐参数表、JSON preset 和 HTML 操作指南。
 
+输入说明
+--------
+
+本工具不需要上传数据文件。它只需要用户选择几个设计意图参数：
+
+- `Engineering objective`: 工程目标，例如活性/底物特异性、稳定性提升、保守小库、激进探索库或均衡模式。
+- `Experimental screening capacity`: 实验筛选容量，影响推荐 hotspot 数量和每个位点建议氨基酸数量。
+- `Do you have active-site / ligand-near coordinates?`: 是否掌握活性位点或配体附近坐标，用于决定是否建议运行 CAVER。
+- `Run CAVER tunnel analysis?`: 是否建议启用 CAVER。没有可靠起点时不建议强行开启。
+
 建议使用方式
 ------------
 
@@ -85,6 +95,18 @@
 - `Conservative small library`: 适合筛选容量小的实验，只保留自然/consensus/保守替换。
 - `Exploratory large library`: 适合高通量筛选，允许 reduced alphabet 和 alanine scanning。
 - `Balanced`: 默认均衡策略。
+
+输出说明
+--------
+
+**recommended_parameters.tsv**
+  Galaxy datatype 为 `tabular`。按 tool、parameter、recommended value 三列列出推荐参数。用户可在 workflow editor 中逐步填入。
+
+**workflow_preset.json**
+  Galaxy datatype 为 `json`。机器可读 preset，便于未来自动化 workflow 参数填充。
+
+**workflow_guide.html**
+  Galaxy datatype 为 `html`。给用户看的操作指南和参数表，已加入 HTML allowlist，可直接在 Galaxy 中打开。
     ]]></help>
     <citations />
 </tool>

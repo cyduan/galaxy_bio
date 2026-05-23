@@ -196,6 +196,14 @@
 **Input protein structure PDB**
   标准 PDB 坐标文件。可以来自结构准备工具、RCSB PDB、AlphaFold/ESMFold/ColabFold 输出或用户上传。
 
+输入格式和类型要求
+------------------
+
+- Galaxy datatype: `pdb`。
+- 文件必须包含标准 PDB 原子坐标。fpocket、P2Rank 和 CAVER 对 mmCIF 支持不一致，因此本工具要求 PDB。
+- 结构最好已经去除明显无关链、重复模型或严重冲突；多链复合物可以输入，但后续 hotspot 解释需要注意链 ID。
+- CAVER 若开启，最好提供合理起点：活性位点、配体、金属、辅因子或 catalytic residue 附近坐标。默认 centroid 只适合粗略探索和流程测试。
+
 关键参数
 --------
 
@@ -228,6 +236,14 @@
 
 **raw output ZIP**
   完整后端输出目录，便于复核和调试。
+
+输出如何进入后续流程
+--------------------
+
+- `pockets.tsv` 连接到 Tool 6 `Hotspot Residue Ranker` 的 `pockets.tsv` 输入。
+- `tunnels.tsv` 连接到 Tool 6 `Hotspot Residue Ranker` 的 `tunnels.tsv` 输入。
+- `residue_pocket_tunnel_annotation.tsv` 是残基层面的口袋/通道注释，适合人工复核或未来扩展。
+- `pocket_structure.pdb` 可用于结构可视化，通常不作为后续自动打分的必需输入。
 
 注意事项
 --------

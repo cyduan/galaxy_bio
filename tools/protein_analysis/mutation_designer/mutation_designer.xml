@@ -154,6 +154,26 @@
 
 本工具是 HotSpot Wizard-like 蛋白半理性改造流程的 Tool 7。它接收 Tool 6 输出的 `hotspot_residue_ranked.tsv`、Tool 3 输出的 `msa.fasta` 以及目标蛋白 FASTA，为 hotspot 位点推荐候选氨基酸替换，并给出 smart library 与简并密码子设计表。
 
+输入说明
+--------
+
+**hotspot_residue_ranked.tsv**
+  Galaxy datatype 为 `tabular`。来自 Tool 6，包含 hotspot 位点、排名、`wt_aa`、`consensus_aa`、`accepted_aas`、hotspot class 和推荐理由。
+
+**msa.fasta**
+  Galaxy datatype 为 `fasta`。来自 Tool 3，是蛋白 MSA。工具会按目标序列位置统计每列 naturally observed amino acids 和频率。
+
+**protein_sequence.fasta**
+  Galaxy datatype 为 `fasta`。目标蛋白或目标链的未对齐 FASTA 序列。应与 Tool 3 MSA 中的 query/reference 序列一致，用于把 hotspot position 映射到 MSA column。
+
+输入格式和类型要求
+------------------
+
+- `hotspot_residue_ranked.tsv` 必须至少包含 `position` 或 `residue_number`、`chain`、`wt_aa`、`hotspot_score` 等信息。
+- `msa.fasta` 必须是等长对齐序列；若 query 不是第一条，建议在 `MSA reference sequence` 中指定 ID。
+- `protein_sequence.fasta` 应为氨基酸序列，不应包含 DNA/RNA 碱基序列。
+- 若结构编号和序列编号不一致，需要先在前序步骤中统一，否则推荐突变位置会偏移。
+
 推荐突变来源
 ------------
 
@@ -174,6 +194,12 @@
 
 **degenerate_codons.tsv**
   每个位点的简并密码子、覆盖氨基酸、额外引入氨基酸、缺失氨基酸和覆盖率。该表用于后续引物/文库设计复核。
+
+输出如何进入后续流程
+--------------------
+
+- `candidate_mutations.tsv` 连接到 Tool 8 `Stability Predictor`。
+- `candidate_mutations.tsv`、`smart_library.tsv` 和 `degenerate_codons.tsv` 都连接到 Tool 9 `Smart Library Report Generator`。
 
 注意事项
 --------
