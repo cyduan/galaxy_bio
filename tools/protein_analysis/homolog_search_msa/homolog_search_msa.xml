@@ -107,21 +107,21 @@
     </inputs>
     <outputs>
         <data name="homologs_fasta" format="fasta" from_work_dir="homologs.fasta"
-            label="${tool.name} on ${on_string}: homologs" />
+            label="${tool.name} on ${on_string} | 01 homologs.fasta" />
         <data name="filtered_homologs_fasta" format="fasta" from_work_dir="filtered_homologs.fasta"
-            label="${tool.name} on ${on_string}: filtered homologs" />
+            label="${tool.name} on ${on_string} | 02 filtered_homologs.fasta" />
         <data name="msa_fasta" format="fasta" from_work_dir="msa.fasta"
-            label="${tool.name} on ${on_string}: MSA" />
+            label="${tool.name} on ${on_string} | 03 msa.fasta" />
         <data name="summary_tsv" format="tabular" from_work_dir="homolog_summary.tsv"
-            label="${tool.name} on ${on_string}: homolog summary" />
+            label="${tool.name} on ${on_string} | 04 homolog_summary.tsv" />
         <data name="raw_search_tsv" format="tabular" from_work_dir="raw_search.tsv"
-            label="${tool.name} on ${on_string}: raw search results" />
+            label="${tool.name} on ${on_string} | 05 raw_search.tsv" />
         <data name="cluster_report" format="txt" from_work_dir="cluster_report.txt"
-            label="${tool.name} on ${on_string}: clustering report" />
+            label="${tool.name} on ${on_string} | 06 cluster_report.txt" />
         <data name="msa_log" format="txt" from_work_dir="msa_log.txt"
-            label="${tool.name} on ${on_string}: MSA log" />
+            label="${tool.name} on ${on_string} | 07 msa_log.txt" />
         <data name="run_log" format="txt" from_work_dir="run_log.txt"
-            label="${tool.name} on ${on_string}: run log" />
+            label="${tool.name} on ${on_string} | 08 run_log.txt" />
     </outputs>
     <tests>
         <test expect_num_outputs="8">

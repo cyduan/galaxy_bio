@@ -38,9 +38,9 @@
     </inputs>
     <outputs>
         <data name="residue_features" format="tabular" from_work_dir="residue_structure_features.tsv"
-            label="${tool.name} on ${on_string}: residue structure features" />
+            label="${tool.name} on ${on_string} | 01 residue_structure_features.tsv" />
         <data name="quality_report" format="html" from_work_dir="quality_report.html"
-            label="${tool.name} on ${on_string}: quality report" />
+            label="${tool.name} on ${on_string} | 02 quality_report.html" />
     </outputs>
     <tests>
         <test expect_num_outputs="2">

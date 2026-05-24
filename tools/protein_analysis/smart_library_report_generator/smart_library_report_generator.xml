@@ -55,17 +55,17 @@
     </inputs>
     <outputs>
         <data name="ranked_hotspots" format="tabular" from_work_dir="ranked_hotspots.tsv"
-            label="${tool.name} on ${on_string}: ranked hotspots" />
+            label="${tool.name} on ${on_string} | 01 ranked_hotspots.tsv" />
         <data name="ranked_mutations" format="tabular" from_work_dir="ranked_mutations.tsv"
-            label="${tool.name} on ${on_string}: ranked mutations" />
+            label="${tool.name} on ${on_string} | 02 ranked_mutations.tsv" />
         <data name="smart_library_design" format="tabular" from_work_dir="smart_library_design.tsv"
-            label="${tool.name} on ${on_string}: smart library design" />
+            label="${tool.name} on ${on_string} | 03 smart_library_design.tsv" />
         <data name="summary_html" format="html" from_work_dir="summary.html"
-            label="${tool.name} on ${on_string}: summary report" />
+            label="${tool.name} on ${on_string} | 04 summary.html" />
         <data name="structure_viewer_html" format="html" from_work_dir="structure_viewer.html"
-            label="${tool.name} on ${on_string}: structure viewer" />
+            label="${tool.name} on ${on_string} | 05 structure_viewer.html" />
         <data name="run_log" format="txt" from_work_dir="run_log.txt"
-            label="${tool.name} on ${on_string}: run log" />
+            label="${tool.name} on ${on_string} | 06 run_log.txt" />
     </outputs>
     <tests>
         <test expect_num_outputs="6">

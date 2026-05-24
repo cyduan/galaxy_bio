@@ -112,13 +112,13 @@
     </inputs>
     <outputs>
         <data name="candidate_mutations" format="tabular" from_work_dir="candidate_mutations.tsv"
-            label="${tool.name} on ${on_string}: candidate mutations" />
+            label="${tool.name} on ${on_string} | 01 candidate_mutations.tsv" />
         <data name="smart_library" format="tabular" from_work_dir="smart_library.tsv"
-            label="${tool.name} on ${on_string}: smart library" />
+            label="${tool.name} on ${on_string} | 02 smart_library.tsv" />
         <data name="degenerate_codons" format="tabular" from_work_dir="degenerate_codons.tsv"
-            label="${tool.name} on ${on_string}: degenerate codons" />
+            label="${tool.name} on ${on_string} | 03 degenerate_codons.tsv" />
         <data name="run_log" format="txt" from_work_dir="run_log.txt"
-            label="${tool.name} on ${on_string}: run log" />
+            label="${tool.name} on ${on_string} | 04 run_log.txt" />
     </outputs>
     <tests>
         <test expect_num_outputs="4">

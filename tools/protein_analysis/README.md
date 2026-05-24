@@ -108,6 +108,27 @@ structure_viewer.html
 Intermediate files are intentionally preserved for auditability and expert
 debugging, but they do not all need to be shown to experimental collaborators.
 
+## History Output Naming Convention
+
+HotSpot workflow tools use a consistent Galaxy History label pattern:
+
+```text
+Tool Name on input-dataset | 01 output_file.ext
+```
+
+For example:
+
+```text
+Hotspot Residue Ranker on dataset 20 | 01 hotspot_residue_ranked.tsv
+Hotspot Residue Ranker on dataset 20 | 02 hotspot_report.html
+Hotspot Residue Ranker on dataset 20 | 03 hotspot_viewer.html
+```
+
+This does not modify Galaxy's internal History ID numbering. Galaxy History IDs
+are global database IDs and should not be repurposed as per-tool batch numbers.
+The numbered suffix keeps outputs from the same tool run easy to search, sort,
+and review without touching Galaxy core code.
+
 ## ProtParam install and checks
 
 The ProtParam wrapper uses Biopython `ProteinAnalysis`.

@@ -108,43 +108,43 @@
     </inputs>
     <outputs>
         <data name="pockets_tsv" format="tabular" from_work_dir="pockets.tsv"
-            label="${tool.name} on ${on_string}: pockets">
+            label="${tool.name} on ${on_string} | 01 pockets.tsv">
             <filter>outputs_to_keep['keep_pockets_tsv'] == True</filter>
         </data>
         <data name="tunnels_tsv" format="tabular" from_work_dir="tunnels.tsv"
-            label="${tool.name} on ${on_string}: tunnels">
+            label="${tool.name} on ${on_string} | 02 tunnels.tsv">
             <filter>outputs_to_keep['keep_tunnels_tsv'] == True</filter>
         </data>
         <data name="residue_annotation" format="tabular" from_work_dir="residue_pocket_tunnel_annotation.tsv"
-            label="${tool.name} on ${on_string}: residue pocket/tunnel annotation">
+            label="${tool.name} on ${on_string} | 03 residue_pocket_tunnel_annotation.tsv">
             <filter>outputs_to_keep['keep_residue_annotation'] == True</filter>
         </data>
         <data name="pocket_structure" format="pdb" from_work_dir="pocket_structure.pdb"
-            label="${tool.name} on ${on_string}: pocket/tunnel structure">
+            label="${tool.name} on ${on_string} | 04 pocket_structure.pdb">
             <filter>outputs_to_keep['keep_pocket_structure'] == True</filter>
         </data>
         <data name="fpocket_info" format="txt" from_work_dir="fpocket_info.txt"
-            label="${tool.name} on ${on_string}: fpocket info">
+            label="${tool.name} on ${on_string} | 05 fpocket_info.txt">
             <filter>outputs_to_keep['keep_fpocket_info'] == True</filter>
         </data>
         <data name="p2rank_predictions" format="csv" from_work_dir="p2rank_predictions.csv"
-            label="${tool.name} on ${on_string}: P2Rank predictions">
+            label="${tool.name} on ${on_string} | 06 p2rank_predictions.csv">
             <filter>outputs_to_keep['keep_p2rank_predictions'] == True</filter>
         </data>
         <data name="p2rank_residues" format="csv" from_work_dir="p2rank_residues.csv"
-            label="${tool.name} on ${on_string}: P2Rank residues">
+            label="${tool.name} on ${on_string} | 07 p2rank_residues.csv">
             <filter>outputs_to_keep['keep_p2rank_residues'] == True</filter>
         </data>
         <data name="caver_config" format="txt" from_work_dir="caver_config.txt"
-            label="${tool.name} on ${on_string}: CAVER config">
+            label="${tool.name} on ${on_string} | 08 caver_config.txt">
             <filter>outputs_to_keep['keep_caver_config'] == True</filter>
         </data>
         <data name="raw_archive" format="zip" from_work_dir="pocket_tunnel_raw_outputs.zip"
-            label="${tool.name} on ${on_string}: raw outputs">
+            label="${tool.name} on ${on_string} | 09 pocket_tunnel_raw_outputs.zip">
             <filter>outputs_to_keep['keep_raw_archive'] == True</filter>
         </data>
         <data name="run_log" format="txt" from_work_dir="run_log.txt"
-            label="${tool.name} on ${on_string}: run log">
+            label="${tool.name} on ${on_string} | 10 run_log.txt">
             <filter>outputs_to_keep['keep_run_log'] == True</filter>
         </data>
     </outputs>

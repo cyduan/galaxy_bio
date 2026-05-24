@@ -87,13 +87,13 @@
     </inputs>
     <outputs>
         <data name="ranked_tsv" format="tabular" from_work_dir="hotspot_residue_ranked.tsv"
-            label="${tool.name} on ${on_string}: ranked hotspots" />
+            label="${tool.name} on ${on_string} | 01 hotspot_residue_ranked.tsv" />
         <data name="report_html" format="html" from_work_dir="hotspot_report.html"
-            label="${tool.name} on ${on_string}: hotspot report" />
+            label="${tool.name} on ${on_string} | 02 hotspot_report.html" />
         <data name="viewer_html" format="html" from_work_dir="hotspot_viewer.html"
-            label="${tool.name} on ${on_string}: hotspot viewer" />
+            label="${tool.name} on ${on_string} | 03 hotspot_viewer.html" />
         <data name="run_log" format="txt" from_work_dir="run_log.txt"
-            label="${tool.name} on ${on_string}: run log" />
+            label="${tool.name} on ${on_string} | 04 run_log.txt" />
     </outputs>
     <tests>
         <test expect_num_outputs="4">
