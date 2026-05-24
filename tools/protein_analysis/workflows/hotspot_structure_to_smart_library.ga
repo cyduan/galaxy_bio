@@ -2,7 +2,7 @@
   "a_galaxy_workflow": "true",
   "format-version": "0.1",
   "name": "HotSpot structure-to-smart-library protein engineering",
-  "annotation": "HotSpot Wizard-like workflow: annotate protein structure, search homologs, score conservation, detect pockets/tunnels, rank hotspot residues, design mutations, screen stability with FoldX, and generate final smart-library reports.",
+  "annotation": "HotSpot Wizard-like workflow: annotate protein structure and functional residues, validate residue numbering, search homologs, score conservation, detect pockets/tunnels, rank hotspot residues, design mutations, screen stability with FoldX, and generate final smart-library reports.",
   "tags": ["protein-engineering", "hotspot", "smart-library", "foldx"],
   "steps": {
     "0": {
@@ -98,12 +98,13 @@
       "tool_version": "0.1.1",
       "name": "Hotspot Residue Ranker",
       "position": {"left": 900, "top": 120},
-      "tool_state": "{\"active_site\":{\"active_site_mode\":\"none\"},\"structure_pdb\":{\"structure_pdb_mode\":\"provided\"},\"pocket_or_tunnel_weight\":\"0.25\",\"mutability_weight\":\"0.25\",\"surface_accessibility_weight\":\"0.15\",\"flexibility_weight\":\"0.10\",\"active_site_distance_weight\":\"0.10\",\"catalytic_core_penalty\":\"0.25\",\"highly_conserved_penalty\":\"0.20\",\"buried_core_penalty\":\"0.15\",\"high_conservation_threshold\":\"0.85\",\"buried_threshold\":\"0.09\",\"flexibility_b_factor_threshold\":\"70.0\",\"active_site_near_distance\":\"6.0\",\"active_site_caution_distance\":\"10.0\",\"top_n_report\":\"50\"}",
+      "tool_state": "{\"active_site\":{\"active_site_mode\":\"provided\"},\"structure_pdb\":{\"structure_pdb_mode\":\"provided\"},\"pocket_or_tunnel_weight\":\"0.25\",\"mutability_weight\":\"0.25\",\"surface_accessibility_weight\":\"0.15\",\"flexibility_weight\":\"0.10\",\"active_site_distance_weight\":\"0.10\",\"catalytic_core_penalty\":\"0.25\",\"highly_conserved_penalty\":\"0.20\",\"buried_core_penalty\":\"0.15\",\"high_conservation_threshold\":\"0.85\",\"buried_threshold\":\"0.09\",\"flexibility_b_factor_threshold\":\"70.0\",\"active_site_near_distance\":\"6.0\",\"active_site_caution_distance\":\"10.0\",\"top_n_report\":\"50\"}",
       "input_connections": {
         "structure_features": {"id": 2, "output_name": "residue_features"},
         "conservation_tsv": {"id": 4, "output_name": "residue_conservation"},
         "pockets_tsv": {"id": 5, "output_name": "pockets_tsv"},
         "tunnels_tsv": {"id": 5, "output_name": "tunnels_tsv"},
+        "active_site|active_site_tsv": {"id": 10, "output_name": "active_site_tsv"},
         "structure_pdb|structure_pdb_file": {"id": 0, "output_name": "output"}
       },
       "outputs": [
@@ -176,6 +177,45 @@
         {"name": "smart_library_design", "type": "tabular"},
         {"name": "summary_html", "type": "html"},
         {"name": "structure_viewer_html", "type": "html"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "10": {
+      "id": 10,
+      "type": "tool",
+      "tool_id": "functional_residue_annotator",
+      "tool_version": "0.1.0",
+      "name": "Functional Residue Annotator",
+      "position": {"left": 900, "top": -180},
+      "tool_state": "{\"annotation\":{\"annotation_mode\":\"none\"},\"ligand_distance_cutoff\":\"4.5\",\"metal_distance_cutoff\":\"3.0\",\"ignore_ligands\":\"HOH,WAT,DOD,H2O\",\"protect_roles\":\"catalytic,active_site,metal_binding,essential,cofactor_binding\",\"include_ligand_contacts_in_active_site\":\"false\"}",
+      "input_connections": {"input_pdb": {"id": 0, "output_name": "output"}},
+      "outputs": [
+        {"name": "residue_annotation", "type": "tabular"},
+        {"name": "active_site_tsv", "type": "tabular"},
+        {"name": "ligand_contacts", "type": "tabular"},
+        {"name": "report_html", "type": "html"},
+        {"name": "run_log", "type": "txt"}
+      ]
+    },
+    "11": {
+      "id": 11,
+      "type": "tool",
+      "tool_id": "residue_numbering_validator",
+      "tool_version": "0.1.0",
+      "name": "Residue Numbering Validator",
+      "position": {"left": 900, "top": 430},
+      "tool_state": "{\"chain\":{\"chain_mode\":\"auto\"},\"msa\":{\"msa_mode\":\"provided\",\"msa_reference_id\":\"\"},\"structure_features_mode\":{\"structure_features_source\":\"provided\"},\"conservation_mode\":{\"conservation_source\":\"provided\"}}",
+      "input_connections": {
+        "input_pdb": {"id": 0, "output_name": "output"},
+        "protein_fasta": {"id": 1, "output_name": "output"},
+        "msa|msa_fasta": {"id": 3, "output_name": "msa_fasta"},
+        "structure_features_mode|structure_features": {"id": 2, "output_name": "residue_features"},
+        "conservation_mode|conservation_tsv": {"id": 4, "output_name": "residue_conservation"}
+      },
+      "outputs": [
+        {"name": "validation_tsv", "type": "tabular"},
+        {"name": "summary_tsv", "type": "tabular"},
+        {"name": "report_html", "type": "html"},
         {"name": "run_log", "type": "txt"}
       ]
     }

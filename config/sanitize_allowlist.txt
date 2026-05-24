@@ -2,6 +2,8 @@
 # text/html without Galaxy converting them to plain text. Keep this list narrow:
 # do not add tools that pass user-authored HTML through unchanged.
 structure_quality_annotator
+functional_residue_annotator
+residue_numbering_validator
 hotspot_workflow_preset_advisor
 hotspot_residue_ranker
 smart_library_report_generator

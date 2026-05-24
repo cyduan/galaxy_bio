@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="functional_residue_annotator" name="Functional Residue Annotator" version="0.1.0" profile="24.0">
+    <description>annotate catalytic, ligand-contact, metal-binding, and user/database functional residues</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_functional_residue_annotator.py'
+  --input-pdb '$input_pdb'
+  --residue-annotation-tsv 'residue_functional_annotation.tsv'
+  --active-site-tsv 'active_site_candidates.tsv'
+  --ligand-contacts-tsv 'ligand_contacts.tsv'
+  --report-html 'functional_annotation_report.html'
+  --run-log 'run_log.txt'
+  --ligand-distance-cutoff '$ligand_distance_cutoff'
+  --metal-distance-cutoff '$metal_distance_cutoff'
+  --ignore-ligands '$ignore_ligands'
+  --protect-roles '$protect_roles'
+#if str($annotation.annotation_mode) == "provided":
+  --functional-annotation-tsv '$annotation.functional_annotation_tsv'
+#end if
+#if str($include_ligand_contacts_in_active_site) == "true":
+  --include-ligand-contacts-in-active-site
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input_pdb" type="data" format="pdb" label="Input protein structure PDB" />
+        <conditional name="annotation">
+            <param name="annotation_mode" type="select" label="Optional functional annotation TSV">
+                <option value="none" selected="true">No external annotation table</option>
+                <option value="provided">Use uploaded/database-derived annotation TSV</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="functional_annotation_tsv" type="data" format="tabular" label="Functional annotation TSV"
+                    help="Recommended columns: chain, residue_number, residue_name, role, source, evidence, protect_from_mutation." />
+            </when>
+        </conditional>
+        <param name="ligand_distance_cutoff" type="float" value="4.5" min="0" label="Ligand contact cutoff (A)" />
+        <param name="metal_distance_cutoff" type="float" value="3.0" min="0" label="Metal contact cutoff (A)" />
+        <param name="ignore_ligands" type="text" value="HOH,WAT,DOD,H2O" label="Ignore ligand residue names" />
+        <param name="protect_roles" type="text" value="catalytic,active_site,metal_binding,essential,cofactor_binding"
+            label="Role keywords protected from mutation" />
+        <param name="include_ligand_contacts_in_active_site" type="boolean" checked="false" truevalue="true" falsevalue="false"
+            label="Also send ligand-contact residues to Tool 6 active-site penalty" />
+    </inputs>
+    <outputs>
+        <data name="residue_annotation" format="tabular" from_work_dir="residue_functional_annotation.tsv"
+            label="${tool.name} on ${on_string}: residue functional annotation" />
+        <data name="active_site_tsv" format="tabular" from_work_dir="active_site_candidates.tsv"
+            label="${tool.name} on ${on_string}: active-site candidates for Hotspot Ranker" />
+        <data name="ligand_contacts" format="tabular" from_work_dir="ligand_contacts.tsv"
+            label="${tool.name} on ${on_string}: ligand and metal contacts" />
+        <data name="report_html" format="html" from_work_dir="functional_annotation_report.html"
+            label="${tool.name} on ${on_string}: functional annotation report" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="5">
+            <param name="input_pdb" value="mini_functional.pdb" ftype="pdb" />
+            <param name="annotation_mode" value="provided" />
+            <param name="functional_annotation_tsv" value="functional_annotations.tsv" ftype="tabular" />
+            <output name="residue_annotation">
+                <assert_contents>
+                    <has_text text="metal_binding" />
+                    <has_text text="catalytic" />
+                </assert_contents>
+            </output>
+            <output name="active_site_tsv">
+                <assert_contents>
+                    <has_text text="role" />
+                    <has_text text="catalytic" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具补充 HotSpot 流程中最重要的一类证据：功能残基保护。它会从 PDB 的 HETATM 配体/金属邻近关系自动标记 ligand-contact 与 metal-binding residue，并可叠加用户上传或数据库整理得到的 catalytic/essential/active-site residue 表。
+
+输入格式
+--------
+
+**Input protein structure PDB**
+  Galaxy datatype 为 `pdb`。必须包含 ATOM 坐标；若结构中有配体、金属、辅因子，应保留 HETATM 记录。
+
+**Functional annotation TSV**
+  可选，Galaxy datatype 为 `tabular`。推荐列：`chain, residue_number, residue_name, role, source, evidence, protect_from_mutation`。可由 UniProt feature、M-CSA/CSA、BioLiP 或人工整理得到。
+
+输出说明
+--------
+
+**residue_functional_annotation.tsv**
+  每个被注释的功能残基一行，包含 role、evidence source、是否保护、最近配体距离、接触配体 ID 等。
+
+**active_site_candidates.tsv**
+  兼容 Tool 6 `Hotspot Residue Ranker` 的 optional active-site TSV。建议连接到 Tool 6，用于对催化核心、金属结合位点等进行惩罚。
+
+**ligand_contacts.tsv**
+  原子级最近接触表，记录残基与配体/金属的距离。
+
+**functional_annotation_report.html**
+  HTML 质控报告，可直接查看功能残基和配体接触。
+
+注意事项
+--------
+
+- 没有外部数据库时，本工具仍可根据 PDB 中的 ligand/metal 距离给出结构功能区提示。
+- 配体接触不一定等于催化残基；默认只有 catalytic/active_site/metal_binding/essential 等角色进入强保护。
+- 若要使用 UniProt/M-CSA/BioLiP，请先离线整理为 TSV，再作为 optional annotation table 上传或接入 workflow。
+    ]]></help>
+    <citations />
+</tool>

@@ -1,0 +1,4 @@
+structure_id	chain_id	residue_number	insertion_code	residue_id	amino_acid	dssp_secondary_structure	secondary_structure_class	asa	relative_asa	exposure_class	freesasa_total_asa	freesasa_relative_asa	freesasa_exposure_class	freesasa_main_chain_asa	freesasa_side_chain_asa	freesasa_polar_asa	freesasa_apolar_asa	phi	psi	avg_b_factor	quality_flags
+mini	A	1		A:1	A	C	coil	10	0.1	intermediate	10	0.1	intermediate	5	5	5	5			20	
+mini	A	2		A:2	V	C	coil	20	0.2	intermediate	20	0.2	intermediate	5	15	5	15			20	
+mini	A	3		A:3	L	C	coil	30	0.3	intermediate	30	0.3	intermediate	5	25	5	25			20	

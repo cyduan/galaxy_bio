@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tool id="residue_numbering_validator" name="Residue Numbering Validator" version="0.1.0" profile="24.0">
+    <description>check PDB, FASTA, MSA, structure-feature, and conservation residue numbering consistency</description>
+    <requirements>
+        <requirement type="package">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+\${HOTSPOT_WIZARD_PYTHON:-python} '$__tool_directory__/run_residue_numbering_validator.py'
+  --input-pdb '$input_pdb'
+  --protein-fasta '$protein_fasta'
+  --validation-tsv 'residue_numbering_validation.tsv'
+  --summary-tsv 'numbering_summary.tsv'
+  --report-html 'numbering_report.html'
+  --run-log 'run_log.txt'
+#if str($chain.chain_mode) == "selected":
+  --chain-id '$chain.chain_id'
+#end if
+#if str($msa.msa_mode) == "provided":
+  --msa-fasta '$msa.msa_fasta'
+  #if str($msa.msa_reference_id).strip():
+  --msa-reference-id '$msa.msa_reference_id'
+  #end if
+#end if
+#if str($structure_features_mode.structure_features_source) == "provided":
+  --structure-features '$structure_features_mode.structure_features'
+#end if
+#if str($conservation_mode.conservation_source) == "provided":
+  --conservation-tsv '$conservation_mode.conservation_tsv'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input_pdb" type="data" format="pdb" label="Input protein structure PDB"
+            help="需要检查编号的蛋白结构。必须包含 ATOM 坐标记录。" />
+        <param name="protein_fasta" type="data" format="fasta" label="Target protein FASTA"
+            help="目标蛋白序列。通常来自 PDB to FASTA 工具或用户上传的目标序列。" />
+        <conditional name="chain">
+            <param name="chain_mode" type="select" label="PDB chain selection">
+                <option value="auto" selected="true">Auto: use first protein chain</option>
+                <option value="selected">Use selected chain ID</option>
+            </param>
+            <when value="auto" />
+            <when value="selected">
+                <param name="chain_id" type="text" value="A" label="Chain ID" />
+            </when>
+        </conditional>
+        <conditional name="msa">
+            <param name="msa_mode" type="select" label="Optional MSA FASTA">
+                <option value="none" selected="true">No MSA</option>
+                <option value="provided">Use MSA FASTA</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="msa_fasta" type="data" format="fasta" label="MSA FASTA"
+                    help="通常来自 Homolog Search and MSA 的 msa.fasta 输出。" />
+                <param name="msa_reference_id" type="text" value="" optional="true" label="MSA reference sequence ID"
+                    help="留空时自动寻找与 Target FASTA 完全一致的 ungapped 序列；找不到则使用第一条序列并在 summary 中标记。" />
+            </when>
+        </conditional>
+        <conditional name="structure_features_mode">
+            <param name="structure_features_source" type="select" label="Optional Tool 2 structure features">
+                <option value="none" selected="true">No structure features TSV</option>
+                <option value="provided">Use residue_structure_features.tsv</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="structure_features" type="data" format="tabular" label="residue_structure_features.tsv"
+                    help="Structure Quality Annotator 的 residue_structure_features.tsv 输出。" />
+            </when>
+        </conditional>
+        <conditional name="conservation_mode">
+            <param name="conservation_source" type="select" label="Optional Tool 4 conservation table">
+                <option value="none" selected="true">No conservation TSV</option>
+                <option value="provided">Use residue_conservation.tsv</option>
+            </param>
+            <when value="none" />
+            <when value="provided">
+                <param name="conservation_tsv" type="data" format="tabular" label="residue_conservation.tsv"
+                    help="Conservation / Mutability Scorer 的 residue_conservation.tsv 输出。" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="validation_tsv" format="tabular" from_work_dir="residue_numbering_validation.tsv"
+            label="${tool.name} on ${on_string}: residue numbering validation" />
+        <data name="summary_tsv" format="tabular" from_work_dir="numbering_summary.tsv"
+            label="${tool.name} on ${on_string}: numbering summary" />
+        <data name="report_html" format="html" from_work_dir="numbering_report.html"
+            label="${tool.name} on ${on_string}: numbering report" />
+        <data name="run_log" format="txt" from_work_dir="run_log.txt"
+            label="${tool.name} on ${on_string}: run log" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <param name="input_pdb" value="mini_numbering.pdb" ftype="pdb" />
+            <param name="protein_fasta" value="protein_sequence.fasta" ftype="fasta" />
+            <param name="chain_mode" value="selected" />
+            <param name="chain_id" value="A" />
+            <param name="msa_mode" value="provided" />
+            <param name="msa_fasta" value="msa.fasta" ftype="fasta" />
+            <param name="structure_features_source" value="provided" />
+            <param name="structure_features" value="residue_structure_features.tsv" ftype="tabular" />
+            <param name="conservation_source" value="provided" />
+            <param name="conservation_tsv" value="residue_conservation.tsv" ftype="tabular" />
+            <output name="summary_tsv">
+                <assert_contents>
+                    <has_text text="hotspot_merge_risk" />
+                    <has_text text="low" />
+                </assert_contents>
+            </output>
+            <output name="validation_tsv">
+                <assert_contents>
+                    <has_text text="pdb_matches_fasta" />
+                    <has_text text="yes" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+用途说明
+--------
+
+本工具用于补齐 HotSpot 半理性改造流程里的“编号一致性检查”。它检查 PDB 残基编号、目标 FASTA 序列位置、MSA 参考序列对齐列、Tool 2 结构特征表和 Tool 4 保守性表是否指向同一批残基。
+
+为什么需要它
+------------
+
+很多 PDB 文件的残基编号并不从 1 开始，可能带 insertion code，或者缺失 N/C 端残基。与此同时，保守性分析通常按 FASTA 序列位置输出 `residue_index=1,2,3...`。如果直接把 PDB residue_number 和 FASTA residue_index 当成同一个编号，后续 hotspot ranking 可能静默错位。
+
+输入说明
+--------
+
+**Input protein structure PDB**
+  Galaxy datatype 为 `pdb`。必须包含蛋白 ATOM 坐标。建议先用 Structure Quality Annotator 确认 DSSP/FreeSASA 能解析该结构。
+
+**Target protein FASTA**
+  Galaxy datatype 为 `fasta`。应为与 PDB 选定链对应的蛋白序列。可由 Protein Formats 中的 PDB to FASTA 工具生成，也可上传 UniProt/实验序列。
+
+**PDB chain selection**
+  默认使用 PDB 中第一条蛋白链。多链结构建议显式选择链 ID，例如 `A`。
+
+**MSA FASTA**
+  可选，通常来自 Homolog Search and MSA 的 `msa.fasta`。工具会自动寻找与 Target FASTA 完全一致的 ungapped 参考序列；也可手动填写 reference ID。
+
+**residue_structure_features.tsv**
+  可选，来自 Structure Quality Annotator。用于检查结构特征表是否覆盖对应 PDB 残基。
+
+**residue_conservation.tsv**
+  可选，来自 Conservation / Mutability Scorer。用于检查保守性表的 `residue_index` 是否与 FASTA 位置一致。
+
+输出说明
+--------
+
+**residue_numbering_validation.tsv**
+  每个序列位置一行，列出 FASTA AA、PDB residue number、MSA column、Tool 2/Tool 4 对应 AA，以及是否匹配。
+
+**numbering_summary.tsv**
+  汇总错误数、警告数、PDB 编号是否等同于序列位置，以及 `hotspot_merge_risk`。若 risk 为 `high`，应先修正输入再继续流程。
+
+**numbering_report.html**
+  HTML 报告，适合在 Galaxy 中快速查看错位原因和前 200 个残基的映射。
+
+结果解释
+--------
+
+- `low` risk：PDB 编号和序列位置基本可直接合并。
+- `moderate` risk：氨基酸匹配，但 PDB residue_number 不等于 FASTA sequence_position。流程仍可能合理，但查看热点时要参考 mapping 表。
+- `high` risk：存在氨基酸或长度不一致。请检查链选择、FASTA 是否对应同一蛋白、PDB 是否缺失片段或包含标签序列。
+    ]]></help>
+    <citations />
+</tool>

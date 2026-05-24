@@ -1,0 +1,2 @@
+chain	residue_number	residue_name	role	source	evidence	protect_from_mutation
+A	3	SER	catalytic	user	known catalytic serine	yes

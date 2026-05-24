@@ -8,6 +8,10 @@ protein analysis:
   to a configured local Protein-Sol command.
 - `Structure Quality Annotator`: calls DSSP/mkdssp and optionally FreeSASA to
   report residue-level secondary structure, solvent exposure, and quality flags.
+- `Functional Residue Annotator`: marks catalytic, ligand-contact,
+  metal-binding, essential, and user/database-provided functional residues.
+- `Residue Numbering Validator`: checks that PDB numbering, target FASTA
+  positions, MSA columns, structure features, and conservation rows are aligned.
 - `HotSpot Workflow Preset Advisor`: chooses objective-specific parameters for
   the structure-to-smart-library workflow without hiding intermediate tools.
 - `Homolog Search and MSA`: finds homologous proteins, removes redundancy, and
@@ -41,6 +45,8 @@ It connects:
 ```text
 Protein structure PDB + protein FASTA
   -> Structure Quality Annotator
+  -> Functional Residue Annotator
+  -> Residue Numbering Validator
   -> Homolog Search and MSA
   -> Conservation / Mutability Scorer
   -> Pocket and Tunnel Finder
@@ -80,6 +86,8 @@ alone do not automatically create database-backed public workflows in Galaxy.
 | --- | --- | --- | --- | --- | --- |
 | Advisor | HotSpot Workflow Preset Advisor | form parameters only | no dataset required | `recommended_parameters.tsv`, `workflow_preset.json`, `workflow_guide.html` | choose objective-specific workflow parameters |
 | Tool 2 | Structure Quality Annotator | `pdb`, `cif`, `mmcif` | protein structure with atom coordinates | `residue_structure_features.tsv`, `quality_report.html` | structure features for hotspot ranking |
+| Tool 2b | Functional Residue Annotator | `pdb`, optional `tabular` | protein PDB plus optional curated functional residue TSV | `residue_functional_annotation.tsv`, `active_site_candidates.tsv`, `ligand_contacts.tsv`, `functional_annotation_report.html` | protects catalytic/essential residues and feeds active-site penalties to Tool 6 |
+| QC | Residue Numbering Validator | `pdb`, `fasta`, optional aligned `fasta`, optional `tabular` | PDB, target FASTA, MSA, Tool 2/Tool 4 TSVs | `residue_numbering_validation.tsv`, `numbering_summary.tsv`, `numbering_report.html` | detects chain/numbering/mapping problems before trusting hotspot ranking |
 | Tool 3 | Homolog Search and MSA | `fasta` | target protein FASTA plus server/uploaded homolog database | `homologs.fasta`, `filtered_homologs.fasta`, `msa.fasta`, `homolog_summary.tsv` | MSA for conservation and mutation design |
 | Tool 4 | Conservation / Mutability Scorer | aligned `fasta` | `msa.fasta` from Tool 3 | `residue_conservation.tsv`, raw Rate4Site output, log | conservation, mutability, consensus, accepted AAs |
 | Tool 5 | Pocket and Tunnel Finder | `pdb` | protein structure PDB | `pockets.tsv`, `tunnels.tsv`, `residue_pocket_tunnel_annotation.tsv`, `pocket_structure.pdb` | functional-region evidence for hotspot ranking |
@@ -187,6 +195,85 @@ Run the full wrapper:
   --run-freesasa \
   --freesasa-output /data/test/dssp_selftest/freesasa.rsa \
   --freesasa-binary /data/conda_envs/hotspot_wizard/bin/freesasa
+```
+
+## Functional Residue Annotator checks
+
+Functional Residue Annotator is a pure Python Galaxy tool. It does not require
+an external binary. It can run in two modes:
+
+```text
+PDB-only mode:
+  infer ligand-contact and metal-binding residues from HETATM distance.
+
+PDB + annotation TSV mode:
+  additionally load curated catalytic/essential/active-site residues from a TSV.
+```
+
+Recommended optional annotation TSV columns:
+
+```text
+chain
+residue_number
+residue_name
+role
+source
+evidence
+protect_from_mutation
+```
+
+Example sources for a curated TSV are UniProt feature annotations, M-CSA/CSA,
+BioLiP, literature curation, or active-site residues from a project notebook.
+
+Run a local smoke test:
+
+```bash
+mkdir -p /data/test/functional_residue_selftest
+/data/conda_envs/hotspot_wizard/bin/python \
+  /data/tools/galaxy_bio/tools/protein_analysis/functional_residue_annotator/run_functional_residue_annotator.py \
+  --input-pdb /data/tools/galaxy_bio/tools/protein_analysis/functional_residue_annotator/test-data/mini_functional.pdb \
+  --functional-annotation-tsv /data/tools/galaxy_bio/tools/protein_analysis/functional_residue_annotator/test-data/functional_annotations.tsv \
+  --residue-annotation-tsv /data/test/functional_residue_selftest/residue_functional_annotation.tsv \
+  --active-site-tsv /data/test/functional_residue_selftest/active_site_candidates.tsv \
+  --ligand-contacts-tsv /data/test/functional_residue_selftest/ligand_contacts.tsv \
+  --report-html /data/test/functional_residue_selftest/functional_annotation_report.html \
+  --run-log /data/test/functional_residue_selftest/run_log.txt
+```
+
+Connect `active_site_candidates.tsv` to Hotspot Residue Ranker's optional
+active-site input to protect catalytic cores, metal-binding residues, and other
+essential sites from being over-prioritized as mutation targets.
+
+## Residue Numbering Validator checks
+
+Residue Numbering Validator is also a pure Python tool. It is recommended before
+reviewing hotspot results, especially for PDB files whose residue numbers do
+not start at 1 or contain insertion codes.
+
+Run a local smoke test:
+
+```bash
+mkdir -p /data/test/residue_numbering_selftest
+/data/conda_envs/hotspot_wizard/bin/python \
+  /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/run_residue_numbering_validator.py \
+  --input-pdb /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/test-data/mini_numbering.pdb \
+  --protein-fasta /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/test-data/protein_sequence.fasta \
+  --msa-fasta /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/test-data/msa.fasta \
+  --structure-features /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/test-data/residue_structure_features.tsv \
+  --conservation-tsv /data/tools/galaxy_bio/tools/protein_analysis/residue_numbering_validator/test-data/residue_conservation.tsv \
+  --chain-id A \
+  --validation-tsv /data/test/residue_numbering_selftest/residue_numbering_validation.tsv \
+  --summary-tsv /data/test/residue_numbering_selftest/numbering_summary.tsv \
+  --report-html /data/test/residue_numbering_selftest/numbering_report.html \
+  --run-log /data/test/residue_numbering_selftest/run_log.txt
+```
+
+The key summary field is `hotspot_merge_risk`:
+
+```text
+low       PDB numbering and FASTA positions are directly mergeable.
+moderate  Residue identities match, but PDB numbering differs from sequence positions.
+high      Length or amino-acid mismatches should be fixed before hotspot ranking.
 ```
 
 ## Homolog Search and MSA install and checks

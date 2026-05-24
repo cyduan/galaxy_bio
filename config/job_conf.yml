@@ -230,6 +230,10 @@ tools:
   environment: foundry_local
 - id: structure_quality_annotator
   environment: hotspot_wizard_local
+- id: functional_residue_annotator
+  environment: hotspot_wizard_local
+- id: residue_numbering_validator
+  environment: hotspot_wizard_local
 - id: hotspot_workflow_preset_advisor
   environment: hotspot_wizard_local
 - id: homolog_search_msa
@@ -239,6 +243,8 @@ tools:
 - id: pocket_tunnel_finder
   environment: hotspot_wizard_local
 - id: hotspot_residue_ranker
+  environment: hotspot_wizard_local
+- id: mutation_designer
   environment: hotspot_wizard_local
 - id: smart_library_report_generator
   environment: hotspot_wizard_local
